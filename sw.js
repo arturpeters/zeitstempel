@@ -19,7 +19,7 @@
  * Lokal (localhost/file) baut sich der Service Worker wie bei Artur ab,
  * damit beim Entwickeln nie eine alte Fassung hängen bleibt.
  */
-const CACHE_NAME = 'zeitstempel-v2';
+const CACHE_NAME = 'zeitstempel-v3';
 const APP_SHELL = [
   './',
   './index.html',

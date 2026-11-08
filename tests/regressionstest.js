@@ -194,6 +194,7 @@ const fix = bootApp({ zsStartDate: '2026-11-16', workDays: {
 check('„Gestern kein Gehen gestempelt"', fix.t('zsFixText'), 'Gestern kein Gehen gestempelt. (+2 weitere)');
 check('Startseite hängt nicht am gestrigen Tag', fix.t('zsTodaySub'), 'wenn du um 07:45 anfängst');
 fix.click('#zsFixBtn');
+check('vergessener Tag zeigt keine 20+ Std. (Stand zum voraussichtlichen Feierabend)', fix.api.dayStatsFor('2026-11-19').totalNetMinutes, 480);
 check('Nachtragen-Formular offen', fix.el('zsQuickFill').classList.contains('is-hidden'), false);
 check('… Gehen vorgeschlagen 16:15', fix.el('zsQfOut').value, '16:15');
 fix.click('#zsQfSave');

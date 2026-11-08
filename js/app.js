@@ -3899,6 +3899,26 @@
    * Liefert die Werte aus PunchClock.deriveStats plus totalNetMinutes.
    */
   function dayStatsFor(dateStr, events, nowMs) {
+    // Vergessenes Gehen an einem vergangenen Tag: nicht bis "jetzt" (also bis
+    // heute früh) durchrechnen – das ergäbe 20+ Stunden. Stattdessen den
+    // Stand zum voraussichtlichen Feierabend zeigen. Gezählt wird der Tag
+    // ohnehin erst, wenn Gehen nachgetragen ist.
+    if (events && events.length && dateStr < P.todayKey()) {
+      const status = P.statusForEvents(events);
+      if (status === P.STATUS.WORKING || status === P.STATUS.ON_BREAK) {
+        const sorted = P.sortEvents(events);
+        const probe = dayStatsRaw(dateStr, events, sorted[sorted.length - 1].timestamp);
+        if (probe.projectedFeierabendMinutes !== null) {
+          const d = new Date(dateStr + 'T00:00:00');
+          const end = d.getTime() + probe.projectedFeierabendMinutes * 60000;
+          nowMs = Math.max(sorted[sorted.length - 1].timestamp, Math.min(nowMs, end));
+        }
+      }
+    }
+    return dayStatsRaw(dateStr, events, nowMs);
+  }
+
+  function dayStatsRaw(dateStr, events, nowMs) {
     const type = dayTypeById(dayTypeIdFor(dateStr));
     const dayTarget = targetNetMinutes();
     const rule = breakRuleFn();
