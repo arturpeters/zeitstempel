@@ -1,0 +1,1458 @@
+/* =========================================================================
+   Feierabend-Rechner – Premium Dark UI
+   Drei umschaltbare Themes über [data-theme] auf <body>: design1 / design2 / design3
+   ========================================================================= */
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+
+/* Verhindert, dass horizontales Wischen (Swipe) in der Android-WebView als
+   "Seite zurück"-Geste interpretiert wird. Ohne das zeigt Android bei jedem
+   Seitwärts-Swipe kurz einen (verschobenen/verblassten) Schnappschuss der
+   aktuellen Seite als vermeintliche "vorherige Seite" an, weil die App keine
+   echte Browser-Historie hat. Zusätzlich wird Pinch-Zoom über das Viewport-
+   Meta-Tag deaktiviert, damit es nicht zu dem gleichen verschobenen/
+   abgeschnittenen Effekt beim Verschieben eines gezoomten Layouts kommt. */
+html {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
+  touch-action: pan-y;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  touch-action: pan-y;
+}
+
+.mono, .hero-time, .time-display, .industrial-value, #countdownText,
+.breakdown-row dd, .conv-row span { font-variant-numeric: tabular-nums; }
+
+/* -------------------------------------------------------------------------
+   THEME TOKENS
+   ------------------------------------------------------------------------- */
+
+/* Design 1 – Revolut Style: ruhig, sachlich, klare Hierarchie.
+   Überarbeitet in Version 2.6: Vorher war alles fast gleich hell, dadurch
+   wirkte die Oberfläche flach und die wichtigen Zahlen gingen unter. Jetzt
+   deutlich tieferes Schwarz als Hintergrund, spürbar abgesetzte Karten mit
+   klarer Kante, kräftigerer Text und ein präziser, kühler Akzent. */
+body[data-theme="design1"] {
+  --bg: #07070a;
+  --bg-gradient: linear-gradient(180deg, #101018 0%, #07070a 40%);
+  --card-bg: #14141c;
+  --card-border: rgba(255,255,255,0.10);
+  --card-blur: none;
+  --text: #ffffff;
+  --text-dim: #9b9bad;
+  --text-faint: #6a6a7d;
+  --accent: #635bff;
+  --accent-2: #8f88ff;
+  --accent-gradient: linear-gradient(135deg, #635bff 0%, #8f88ff 100%);
+  --hero-gradient: linear-gradient(135deg, #2a2560 0%, #4f47e0 55%, #7d74ff 100%);
+  --chip-bg: #1c1c26;
+  --chip-active-bg: var(--accent);
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 9px;
+  --shadow: 0 6px 20px rgba(0,0,0,0.5);
+  --green: #24d17e;
+  --orange: #ffa62b;
+  --blue: #4da3ff;
+}
+
+/* Feinschliff, der nur im Revolut-Stil greift: sachlichere Typografie,
+   ruhigere Flächen, dafür klarere Trennlinien. */
+body[data-theme="design1"] .card { box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset; }
+body[data-theme="design1"] .card-label { letter-spacing: 0.06em; color: var(--text-faint); }
+body[data-theme="design1"] .hero-card { border: none; }
+body[data-theme="design1"] .hero-time { letter-spacing: -0.02em; }
+body[data-theme="design1"] .status-main-metric,
+body[data-theme="design1"] .zk-tile { border: 1px solid rgba(255,255,255,0.05); }
+body[data-theme="design1"] .breakdown-row { border-bottom-color: rgba(255,255,255,0.07); }
+body[data-theme="design1"] .mode-btn.is-active { box-shadow: none; }
+body[data-theme="design1"] .bottom-nav { background: rgba(10,10,14,0.96); }
+
+/* Design 2 – Liquid Glass: frosted, translucent, viel Blur */
+body[data-theme="design2"] {
+  --bg: #090914;
+  --bg-gradient:
+    radial-gradient(circle at 15% 0%, rgba(90,110,255,0.25) 0%, transparent 45%),
+    radial-gradient(circle at 90% 20%, rgba(180,90,255,0.18) 0%, transparent 45%),
+    radial-gradient(circle at 50% 100%, rgba(60,180,255,0.12) 0%, transparent 50%),
+    #090914;
+  --card-bg: rgba(255,255,255,0.06);
+  --card-border: rgba(255,255,255,0.14);
+  --card-blur: blur(18px) saturate(150%);
+  --text: #f6f6fb;
+  --text-dim: #a9a7c2;
+  --text-faint: #746f95;
+  --accent: #7c8cff;
+  --accent-2: #b17cff;
+  --accent-gradient: linear-gradient(135deg, rgba(124,140,255,0.9) 0%, rgba(177,124,255,0.9) 100%);
+  --hero-gradient: linear-gradient(135deg, rgba(88,101,242,0.55) 0%, rgba(150,102,255,0.5) 55%, rgba(90,190,255,0.4) 100%);
+  --chip-bg: rgba(255,255,255,0.07);
+  --chip-active-bg: rgba(124,140,255,0.85);
+  --radius-lg: 24px;
+  --radius-md: 18px;
+  --radius-sm: 12px;
+  --shadow: 0 8px 32px rgba(20,10,60,0.45);
+  --green: #4ee3a8;
+  --orange: #ffb454;
+  --blue: #6bb6ff;
+}
+
+/* Design 3 – Custom: sportlich-technisch, kräftige Typografie */
+body[data-theme="design3"] {
+  --bg: #08080f;
+  --bg-gradient: radial-gradient(circle at 80% -10%, #241a3d 0%, #08080f 50%);
+  --card-bg: #131220;
+  --card-border: rgba(140,120,255,0.12);
+  --card-blur: none;
+  --text: #f5f4fa;
+  --text-dim: #918dab;
+  --text-faint: #605c7a;
+  --accent: #8b5cf6;
+  --accent-2: #a855f7;
+  --accent-gradient: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  --hero-gradient: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 45%, #c026d3 100%);
+  --chip-bg: #1b1930;
+  --chip-active-bg: var(--accent);
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 10px 28px rgba(0,0,0,0.4);
+  --green: #22c55e;
+  --orange: #f59e0b;
+  --blue: #3b82f6;
+}
+
+body { background: var(--bg-gradient); }
+
+/* -------------------------------------------------------------------------
+   LAYOUT
+   ------------------------------------------------------------------------- */
+
+.app-shell {
+  max-width: 480px;
+  margin: 0 auto;
+  /* 100px Basisabstand für die Bottom-Nav (~56px Inhalt + Innenabstände) plus
+     das tatsächliche Safe-Area-Inset des Geräts (Gesture-Nav auf Android kann
+     das allein schon >30px sein). Ohne den env()-Teil kann die fixed
+     .bottom-nav auf solchen Geräten den letzten Karteninhalt überdecken,
+     weil ein fester Pixelwert nie das Geräte-Inset kennt. */
+  /* Oben zusätzlich das Safe-Area-Inset: Wegen viewport-fit=cover reicht der
+     Inhalt sonst bis unter die Statusleiste des Handys (Uhrzeit, Akku) und
+     berührt sie fast. */
+  /* Oben: In der Android-WebView liefert env(safe-area-inset-top) schlicht 0,
+     deshalb reichte der env()-Wert allein nicht und die Kopfzeile lag direkt
+     unter Uhrzeit und Akkuanzeige. max() erzwingt einen Mindestabstand und
+     nutzt trotzdem das echte Inset, wo es gemeldet wird. */
+  padding: max(38px, calc(20px + env(safe-area-inset-top))) 16px calc(100px + env(safe-area-inset-bottom));
+}
+
+/* Grid-Kinder schrumpfen ohne min-width:0 nicht unter ihre Inhaltsbreite.
+   Das native Zeitfeld hat im Android-WebView eine sehr breite Eigenbreite und
+   hat dadurch die ganze Karte "Arbeitsbeginn" über den rechten Rand gedrückt. */
+.input-grid > * { min-width: 0; }
+.time-row > * { min-width: 0; }
+.time-display { width: 100%; max-width: 100%; }
+.chip-btn.now-btn { flex-shrink: 0; }
+
+@media (min-width: 900px) {
+  /* Ab hier ist .bottom-nav nicht mehr fixed (siehe unten), also braucht es
+     hier keinen Safe-Area-Zuschlag mehr. */
+  .app-shell { max-width: 760px; padding: 32px 24px 40px; }
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 12px;
+  background: var(--accent-gradient); color: white; flex-shrink: 0;
+}
+.brand-text h1 { font-size: 16px; margin: 0; letter-spacing: 0.02em; font-weight: 700; }
+.brand-sub { margin: 1px 0 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
+
+.icon-btn {
+  width: 38px; height: 38px; border-radius: 12px; border: 1px solid var(--card-border);
+  background: var(--card-bg); color: var(--text-dim); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: transform 0.15s ease, color 0.15s ease;
+}
+.icon-btn:hover { color: var(--text); transform: translateY(-1px); }
+.icon-btn:active { transform: scale(0.94); }
+
+/* Mode toggle */
+.mode-toggle {
+  display: flex; gap: 8px; background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: var(--radius-md); padding: 5px; margin-bottom: 16px; backdrop-filter: var(--card-blur);
+}
+.mode-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 8px; border: none; border-radius: calc(var(--radius-md) - 4px);
+  background: transparent; color: var(--text-dim); font-size: 12.5px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.mode-btn.is-active { background: var(--accent-gradient); color: #fff; box-shadow: var(--shadow); }
+
+/* Grid */
+.input-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px; }
+@media (min-width: 640px) {
+  .input-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  backdrop-filter: var(--card-blur);
+  -webkit-backdrop-filter: var(--card-blur);
+  margin-bottom: 12px;
+}
+.input-grid .card { margin-bottom: 0; }
+
+.card-label {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--text-dim); font-weight: 700; margin: 0 0 12px;
+}
+.card-label.small { font-size: 10.5px; margin-bottom: 8px; }
+.card-label-icon { font-size: 13px; line-height: 1; opacity: 0.9; }
+
+.time-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.time-display {
+  flex: 1; min-width: 0; font-size: 30px; font-weight: 700; background: transparent; border: none;
+  color: var(--text); font-family: inherit; padding: 4px 0;
+}
+.time-display::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.6; cursor: pointer; }
+
+.chip-btn.now-btn {
+  border: 1px solid var(--card-border); background: var(--chip-bg); color: var(--text);
+  padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer;
+  letter-spacing: 0.04em; text-transform: uppercase; transition: background 0.15s ease;
+}
+.chip-btn.now-btn:hover { background: var(--accent); color: #fff; }
+
+.quick-chips { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.chip {
+  border: 1px solid var(--card-border); background: var(--chip-bg); color: var(--text-dim);
+  padding: 7px 12px; border-radius: 10px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s ease;
+}
+.chip.is-active { background: var(--chip-active-bg); color: #fff; border-color: transparent; }
+.chip:hover:not(.is-active) { color: var(--text); }
+
+.industrial-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.round-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--card-border);
+  background: var(--chip-bg); color: var(--text); font-size: 20px; line-height: 1;
+  cursor: pointer; flex-shrink: 0; transition: background 0.15s ease, transform 0.1s ease;
+}
+.round-btn:hover { background: var(--accent); color: #fff; }
+.round-btn:active { transform: scale(0.92); }
+
+.industrial-value-wrap { flex: 1; min-width: 0; display: flex; align-items: baseline; justify-content: center; gap: 4px; }
+.industrial-value {
+  width: 100%; min-width: 0; text-align: center; font-size: 28px; font-weight: 700; background: transparent;
+  border: none; color: var(--text); font-family: inherit;
+}
+.industrial-unit { color: var(--text-dim); font-size: 15px; font-weight: 600; }
+
+.industrial-hint { text-align: center; margin: 10px 0 0; font-size: 12.5px; color: var(--text-dim); }
+.industrial-hint strong { color: var(--text); }
+
+/* Hero */
+.hero-card {
+  background: var(--hero-gradient);
+  border-radius: var(--radius-lg);
+  padding: 26px 20px;
+  text-align: center;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--card-border);
+  backdrop-filter: var(--card-blur);
+}
+.hero-label { margin: 0 0 6px; font-size: 11.5px; letter-spacing: 0.14em; color: rgba(255,255,255,0.85); font-weight: 700; }
+.hero-time-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.hero-time { font-size: 56px; font-weight: 800; color: #fff; letter-spacing: 0.01em; line-height: 1; }
+.hero-clock-icon { color: rgba(255,255,255,0.85); }
+.countdown-pill {
+  display: inline-flex; align-items: center; gap: 7px; margin-top: 14px;
+  background: rgba(0,0,0,0.28); color: #fff; padding: 8px 16px; border-radius: 999px;
+  font-size: 13px; font-weight: 600;
+}
+
+/* Progress */
+.progress-card .card-label { margin-bottom: 10px; }
+.progress-track { height: 10px; border-radius: 999px; background: var(--chip-bg); overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 999px; background: var(--accent-gradient); transition: width 0.4s ease; }
+.progress-meta { display: flex; justify-content: space-between; align-items: baseline; margin-top: 10px; }
+#progressPercent { font-size: 20px; font-weight: 800; color: var(--text); }
+.progress-detail { font-size: 11.5px; color: var(--text-dim); }
+
+/* Mini grid: pause status + law */
+.mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.mini-card { margin-bottom: 0; }
+.pause-status { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; font-weight: 600; }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; background: var(--green); }
+.status-dot.orange { background: var(--orange); }
+.status-dot.blue { background: var(--blue); }
+.law-hint { margin: 0; font-size: 13px; color: var(--text-dim); font-weight: 600; }
+
+/* Breakdown */
+/* -------------------------------------------------------------------------
+   MORGEN-PLANER (Version 2.8)
+   Rückwärtsrechnung: Aufstehen = Arbeitsbeginn − Puffer − Weg − Fertigmachen.
+   ------------------------------------------------------------------------- */
+.morning-result {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.morning-result-label { font-size: 12.5px; color: var(--text-dim); font-weight: 600; }
+.morning-result-time {
+  font-size: 34px; font-weight: 800; letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums; color: var(--text);
+  background: var(--accent-gradient); -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.morning-inputs {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 12px;
+}
+.morning-inputs > * { min-width: 0; }
+.morning-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.morning-field > span { font-size: 11px; color: var(--text-dim); font-weight: 600; }
+.morning-input {
+  width: 100%; max-width: 100%; box-sizing: border-box;
+  padding: 9px 10px; border-radius: var(--radius-sm);
+  border: 1px solid var(--card-border); background: var(--chip-bg); color: var(--text);
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.morning-input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.6; cursor: pointer; }
+.morning-hint { margin: 10px 0 0; font-size: 12px; color: var(--text-dim); line-height: 1.5; overflow-wrap: anywhere; }
+/* Auf Telefonbreiten (360–412px) reichen drei Spalten nicht: das native
+   Zeitfeld hat eine Mindestbreite, die die Karte sonst über den Bildschirmrand
+   schieben würde. Darum bekommt es dort eine eigene volle Zeile. */
+@media (max-width: 460px) {
+  .morning-inputs { grid-template-columns: 1fr 1fr; }
+  .morning-field:first-child { grid-column: 1 / -1; }
+  .morning-result-time { font-size: 30px; }
+}
+
+.breakdown-list { margin: 0; }
+.breakdown-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid var(--card-border); font-size: 13.5px;
+}
+.breakdown-row:last-child { border-bottom: none; }
+.breakdown-row dt { color: var(--text-dim); margin: 0; font-weight: 500; }
+.breakdown-row dd { margin: 0; font-weight: 700; color: var(--text); }
+.breakdown-row.sub { padding-top: 0; padding-bottom: 10px; opacity: 0.75; }
+.breakdown-row.sub dt, .breakdown-row.sub dd { font-size: 12px; font-weight: 500; }
+.breakdown-row.highlight { margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--card-border); border-bottom: none; }
+.breakdown-row.highlight dt { color: var(--text); font-weight: 700; }
+.breakdown-row.highlight dd { color: var(--accent-2); font-size: 17px; }
+
+/* Zuhause (automatisch berechnet) */
+.home-arrival-display { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.home-arrival-label { font-size: 13px; color: var(--text-dim); font-weight: 600; }
+.home-arrival-time { font-size: 26px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.home-hint { font-size: 12.5px; color: var(--text-dim); margin: 0; line-height: 1.5; }
+.home-reverse { margin-top: 14px; border-top: 1px solid var(--card-border); padding-top: 12px; }
+.home-reverse summary {
+  list-style: none; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--text-dim);
+}
+.home-reverse summary::-webkit-details-marker { display: none; }
+.home-reverse[open] summary { color: var(--text); margin-bottom: 10px; }
+.home-reverse .time-row { margin-bottom: 6px; }
+.home-reverse-result { font-size: 13px; color: var(--text-dim); margin: 6px 0 0; line-height: 1.5; }
+.home-reverse-result.is-warning { color: var(--orange); font-weight: 600; }
+.home-reverse-result.is-ok { color: var(--green); font-weight: 600; }
+
+/* Termine */
+.appointment-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.appointment-item {
+  display: flex; align-items: center; gap: 10px; background: var(--chip-bg);
+  border-radius: 12px; padding: 10px 12px;
+}
+.appointment-time { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); flex-shrink: 0; width: 42px; font-size: 13.5px; }
+.appointment-label { flex: 1; min-width: 0; font-size: 13.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.appointment-remove {
+  background: transparent; border: none; color: var(--text-dim); font-size: 17px; line-height: 1;
+  cursor: pointer; padding: 2px 4px; flex-shrink: 0;
+}
+.appointment-remove:hover { color: #f87171; }
+.appointment-empty { font-size: 12.5px; color: var(--text-dim); margin: 0 0 12px; }
+.appointment-next-gap {
+  font-size: 12.5px; color: var(--accent-2); font-weight: 600; margin: 0 0 10px;
+  background: var(--chip-bg); border-radius: 10px; padding: 8px 12px; line-height: 1.4;
+}
+
+.appointment-form { display: flex; gap: 8px; align-items: center; }
+.appointment-time-input {
+  background: var(--chip-bg); border: 1px solid var(--card-border); border-radius: 10px;
+  padding: 8px 10px; color: var(--text); font-family: inherit; font-size: 13px; flex-shrink: 0; width: 100px;
+}
+.appointment-label-input {
+  flex: 1; min-width: 0; background: var(--chip-bg); border: 1px solid var(--card-border); border-radius: 10px;
+  padding: 8px 12px; color: var(--text); font-family: inherit; font-size: 13px;
+}
+.appointment-form .round-btn { width: 36px; height: 36px; font-size: 18px; }
+
+/* Settings: mehrere Zeilen im selben Abschnitt (z. B. Arbeitsweg Hin-/Rückweg) */
+.settings-section .settings-row + .settings-row { margin-top: 8px; }
+
+/* -------------------------------------------------------------------------
+   EINKLAPPBARE KARTEN (Version 2.9)
+   Gleiche Optik wie die bisherigen Klapp-Karten, damit der Tab "Planen"
+   überschaubar bleibt. Jede Karte merkt sich ihren Zustand (siehe app.js).
+   ------------------------------------------------------------------------- */
+.collapsible-card > summary {
+  list-style: none; display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; cursor: pointer; font-size: 11px; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--text-dim); font-weight: 700; min-width: 0;
+}
+.collapsible-card > summary > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.collapsible-card > summary::-webkit-details-marker { display: none; }
+.collapsible-card[open] > summary { margin-bottom: 12px; color: var(--text); }
+.collapsible-card > summary .chevron { flex-shrink: 0; transition: transform 0.2s ease; }
+.collapsible-card[open] > summary .chevron { transform: rotate(90deg); }
+
+/* -------------------------------------------------------------------------
+   AKTIVITÄTEN VOR & NACH DER ARBEIT (Version 2.9)
+   ------------------------------------------------------------------------- */
+.activity-intro { margin: 0 0 14px; font-size: 12.5px; color: var(--text-dim); line-height: 1.5; }
+.activity-slot-label {
+  display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-dim); font-weight: 700; margin: 14px 0 7px;
+}
+.activity-card .activity-slot-label:first-of-type { margin-top: 0; }
+.activity-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.activity-chip {
+  padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--card-border);
+  background: var(--chip-bg); color: var(--text-dim); font-family: inherit;
+  font-size: 12.5px; font-weight: 600; cursor: pointer; max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.activity-chip.is-active { background: var(--chip-active-bg); color: #fff; border-color: transparent; }
+.activity-plan:not(:empty) { margin-top: 10px; }
+
+/* Zweite Zeile im Aufschlüsselungs-Eintrag: "von – bis" unter der Etappe */
+.plan-leg-span {
+  display: block; font-size: 11px; font-weight: 500; color: var(--text-faint);
+  font-variant-numeric: tabular-nums; margin-top: 2px;
+}
+
+.activity-manage { margin-top: 16px; border-top: 1px solid var(--card-border); padding-top: 12px; }
+.activity-manage > summary {
+  list-style: none; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-dim);
+}
+.activity-manage > summary::-webkit-details-marker { display: none; }
+.activity-manage[open] > summary { color: var(--text); margin-bottom: 10px; }
+
+.activity-list { display: flex; flex-direction: column; gap: 6px; }
+.activity-list:empty { display: none; }
+.activity-item {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  background: var(--chip-bg); border-radius: 10px; padding: 8px 10px;
+}
+.activity-item-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.activity-item-text strong { font-size: 13px; color: var(--text); overflow-wrap: anywhere; }
+.activity-item-text span { font-size: 11.5px; color: var(--text-dim); overflow-wrap: anywhere; }
+.activity-remove {
+  flex-shrink: 0; width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--card-border);
+  background: transparent; color: var(--text-dim); font-size: 16px; line-height: 1; cursor: pointer;
+}
+.activity-remove:hover { color: #f87171; border-color: rgba(239,68,68,0.4); }
+.activity-empty { font-size: 12px; color: var(--text-faint); margin: 4px 0 0; }
+.activity-empty.is-hidden { display: none; }
+
+.activity-form { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.activity-form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.activity-form-row > * { min-width: 0; }
+.activity-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.activity-field > span { font-size: 10.5px; color: var(--text-dim); font-weight: 600; }
+.activity-input {
+  width: 100%; max-width: 100%; box-sizing: border-box; min-width: 0;
+  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 9px;
+  padding: 9px 10px; color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600;
+}
+.activity-input-wide { font-size: 14px; }
+.activity-status { font-size: 12px; color: var(--green); margin: 8px 0 0; font-weight: 600; }
+.activity-status.is-error { color: var(--orange); }
+.activity-status.is-hidden { display: none; }
+.activity-note { font-size: 11.5px; color: var(--text-faint); line-height: 1.5; margin: 8px 0 0; overflow-wrap: anywhere; }
+@media (max-width: 460px) {
+  .activity-form-row { grid-template-columns: 1fr 1fr; }
+  .activity-field:first-child { grid-column: 1 / -1; }
+}
+
+/* -------------------------------------------------------------------------
+   TAB "MEIN TAG": Zeitstrahl über den ganzen Tag (Version 3.0)
+   ------------------------------------------------------------------------- */
+.myday-header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.myday-header .card-label { margin: 0; }
+.myday-date { font-size: 12px; color: var(--text-dim); font-weight: 600; }
+.myday-now { margin: 4px 0 16px; font-size: 12.5px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.myday-note { margin: 16px 0 0; font-size: 11.5px; color: var(--text-faint); line-height: 1.5; overflow-wrap: anywhere; }
+
+.day-timeline { position: relative; display: flex; flex-direction: column; }
+.day-stop { display: grid; grid-template-columns: 52px 18px 1fr; align-items: start; gap: 8px; padding: 7px 0; min-width: 0; }
+.day-stop > * { min-width: 0; }
+.day-stop-time {
+  font-size: 13px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums;
+  padding-top: 1px;
+}
+/* Die Linie zwischen den Punkten entsteht aus dem Punkt selbst, damit sie
+   automatisch so lang ist wie die Zeile hoch – kein Raten mit festen Höhen. */
+.day-stop-dot { position: relative; display: block; width: 18px; align-self: stretch; }
+.day-stop-dot::before {
+  content: ''; position: absolute; left: 7px; top: 5px; width: 5px; height: 5px;
+  border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--card-bg);
+}
+.day-stop-dot::after {
+  content: ''; position: absolute; left: 9px; top: 10px; bottom: -14px; width: 1px;
+  background: var(--card-border);
+}
+.day-stop:last-child .day-stop-dot::after { display: none; }
+.day-stop-text { display: flex; flex-direction: column; }
+.day-stop-text strong { font-size: 13.5px; color: var(--text); font-weight: 600; overflow-wrap: anywhere; }
+.day-stop-text span { font-size: 11.5px; color: var(--text-dim); overflow-wrap: anywhere; }
+
+.day-stop.is-past .day-stop-time,
+.day-stop.is-past .day-stop-text strong { color: var(--text-dim); }
+.day-stop.is-past .day-stop-dot::before { background: var(--card-border); }
+.day-stop.is-work .day-stop-dot::before { background: var(--accent-2); }
+.day-stop.is-sleep .day-stop-dot::before { background: var(--blue); }
+.day-stop.is-home .day-stop-dot::before { background: var(--green); }
+
+.day-now { display: grid; grid-template-columns: 52px 18px 1fr; align-items: center; gap: 8px; padding: 3px 0; }
+.day-now-time { font-size: 12px; font-weight: 800; color: var(--orange); font-variant-numeric: tabular-nums; }
+.day-now-line { grid-column: 2 / -1; height: 2px; border-radius: 2px; background: var(--orange); opacity: 0.55; }
+.day-now-label {
+  grid-column: 3; justify-self: start; font-size: 10px; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 800; color: var(--orange); margin-top: -4px;
+}
+
+/* -------------------------------------------------------------------------
+   SCHLAFRECHNER, TAGESDAUER, URLAUBSKONTO, WOCHENPROGNOSE (Version 3.0)
+   ------------------------------------------------------------------------- */
+.sleep-now { margin: 10px 0 0; font-size: 12.5px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.sleep-now.is-short { color: var(--orange); }
+
+.activity-override { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; min-width: 0; }
+.activity-override.is-hidden { display: none; }
+.activity-override > span:first-child { font-size: 11.5px; color: var(--text-dim); font-weight: 600; flex-shrink: 0; }
+.activity-override .activity-input { width: 78px; flex-shrink: 0; }
+.activity-override-note { font-size: 11px; color: var(--text-faint); min-width: 0; overflow-wrap: anywhere; }
+
+/* Rückmeldung direkt am Feld: "= 1 Std. 20 Min." */
+.duration-echo { font-size: 10.5px; color: var(--text-faint); font-weight: 600; overflow-wrap: anywhere; }
+.duration-echo.is-error { color: var(--orange); }
+
+.vacation-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.vacation-grid > * { min-width: 0; }
+#vacationRemaining.is-negative { color: var(--orange); }
+
+.forecast-block { margin-top: 14px; border-top: 1px solid var(--card-border); padding-top: 12px; }
+.forecast-label {
+  display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-dim); font-weight: 700; margin-bottom: 8px;
+}
+.forecast-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.forecast-grid > * { min-width: 0; }
+.forecast-tile { background: var(--chip-bg); border-radius: var(--radius-md); padding: 9px 10px; min-width: 0; }
+.forecast-tile-label { display: block; font-size: 10.5px; color: var(--text-dim); font-weight: 600; }
+.forecast-tile-value {
+  display: block; font-size: 16px; font-weight: 800; color: var(--text);
+  font-variant-numeric: tabular-nums; margin-top: 2px; overflow-wrap: anywhere;
+}
+.forecast-hint { margin: 10px 0 0; font-size: 12px; color: var(--text-dim); line-height: 1.5; overflow-wrap: anywhere; }
+
+/* Die Aktivitäts-Zeile ist jetzt ein Knopf (antippen = bearbeiten) */
+.activity-item-text {
+  text-align: left; background: transparent; border: none; padding: 0; cursor: pointer;
+  font-family: inherit; color: inherit;
+}
+.activity-item-text.as-static { cursor: default; }
+.activity-item.is-editing { outline: 1px solid var(--accent); }
+
+.school-block-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.school-block-row > * { min-width: 0; }
+
+/* -------------------------------------------------------------------------
+   EINKLAPPBARE ERKLÄRTEXTE (Version 3.1)
+   Die Anleitungen standen vorher dauerhaft offen und haben jede Karte
+   aufgebläht. Jetzt sind sie da, wenn man sie braucht, und sonst nicht.
+   ------------------------------------------------------------------------- */
+.explain { margin-top: 12px; }
+.explain > summary {
+  list-style: none; cursor: pointer; font-size: 11.5px; font-weight: 600;
+  color: var(--text-faint); padding: 4px 0;
+}
+.explain > summary::-webkit-details-marker { display: none; }
+.explain > summary::before { content: 'ℹ '; }
+.explain[open] > summary { color: var(--text-dim); }
+.explain p {
+  margin: 6px 0 0; font-size: 12px; line-height: 1.55; color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+/* Die eingepackten Original-Absätze sollen ihren eigenen Abstand verlieren */
+.explain > .zeitkonto-hint, .explain > .week-day-hint, .explain > .stat-hint { margin: 6px 0 0; }
+
+/* -------------------------------------------------------------------------
+   KALENDER-TAB (Version 3.1): Zeiträume antippen statt Tag für Tag
+   ------------------------------------------------------------------------- */
+.calendar-wrap { margin-top: 4px; }
+.calendar-cell.is-pickable {
+  border: 1px solid transparent; background: var(--chip-bg); color: var(--text);
+  font-family: inherit; cursor: pointer; padding: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+}
+.calendar-cell.is-pickable .calendar-day { font-size: 12px; font-weight: 600; }
+.calendar-cell .calendar-mark { font-size: 10px; line-height: 1; }
+.calendar-cell.is-today { outline: 1px solid var(--accent-2); }
+.calendar-cell.is-auto { color: var(--blue); }
+.calendar-cell.is-selected { background: var(--accent); color: #fff; }
+.calendar-cell.is-range-start, .calendar-cell.is-range-end {
+  background: var(--accent-2); color: #fff; font-weight: 800;
+}
+
+.calendar-selection {
+  margin: 12px 0 8px; font-size: 12.5px; color: var(--text-dim); line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.calendar-types { margin-bottom: 10px; }
+.calendar-types.is-disabled { opacity: 0.45; pointer-events: none; }
+#calendarClearBtn:disabled { opacity: 0.45; cursor: default; }
+
+/* Mitgelieferte Ferien sind nicht löschbar und werden ruhiger dargestellt */
+.activity-item.is-packaged { opacity: 0.75; }
+
+/* Was wäre wenn? */
+.wwenn-card summary {
+  list-style: none; display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--text-dim); font-weight: 700;
+}
+.wwenn-card summary::-webkit-details-marker { display: none; }
+.wwenn-card[open] summary { margin-bottom: 12px; }
+.wwenn-card .chevron { transition: transform 0.2s ease; }
+.wwenn-card[open] .chevron { transform: rotate(90deg); }
+.wwenn-disclaimer { font-size: 12px; font-style: italic; color: var(--text-faint); margin: 0 0 12px; }
+.wwenn-label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 8px; }
+.wwenn-label strong { color: var(--text); font-variant-numeric: tabular-nums; }
+#wwennStartSlider {
+  width: 100%; height: 6px; border-radius: 999px; background: var(--chip-bg);
+  appearance: none; -webkit-appearance: none; outline: none; margin: 4px 0 14px;
+}
+#wwennStartSlider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent-gradient); cursor: pointer; box-shadow: var(--shadow);
+}
+#wwennStartSlider::-moz-range-thumb {
+  width: 20px; height: 20px; border-radius: 50%; border: none;
+  background: var(--accent-gradient); cursor: pointer; box-shadow: var(--shadow);
+}
+.wwenn-result { font-size: 15px; color: var(--text); font-weight: 600; }
+.wwenn-result strong { color: var(--accent-2); font-variant-numeric: tabular-nums; }
+
+/* Zeitkonto: Einheiten-Umschalter */
+.zeitkonto-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; }
+.zeitkonto-header .card-label { margin: 0; }
+.zeitkonto-unit-toggle { display: flex; gap: 4px; background: var(--chip-bg); border-radius: 10px; padding: 3px; }
+.unit-btn {
+  border: none; background: transparent; color: var(--text-dim); font-size: 10.5px; font-weight: 700;
+  padding: 5px 8px; border-radius: 7px; cursor: pointer; transition: all 0.15s ease;
+}
+.unit-btn.is-active { background: var(--accent); color: #fff; }
+
+/* Arbeitsprofile: speichern / löschen */
+.preset-item { position: relative; padding-right: 40px; }
+.preset-main { cursor: pointer; }
+.preset-remove {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  background: transparent; border: none; color: var(--text-dim); font-size: 16px; line-height: 1;
+  cursor: pointer; padding: 4px 6px; z-index: 1;
+}
+.preset-remove:hover { color: #f87171; }
+.preset-form { display: flex; gap: 8px; margin-top: 10px; }
+.preset-name-input {
+  flex: 1; min-width: 0; background: var(--chip-bg); border: 1px solid var(--card-border); border-radius: 10px;
+  padding: 10px 12px; color: var(--text); font-family: inherit; font-size: 13px;
+}
+.preset-form .chip-btn {
+  border: 1px solid var(--card-border); background: var(--chip-bg); color: var(--text);
+  padding: 0 14px; border-radius: 10px; font-size: 12.5px; font-weight: 700; cursor: pointer;
+  white-space: nowrap;
+}
+.preset-form .chip-btn:hover { background: var(--accent); color: #fff; }
+
+/* Export */
+.export-hint { font-size: 12.5px; color: var(--text-dim); margin: 0 0 12px; line-height: 1.5; }
+.export-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.export-actions .chip-btn {
+  border: 1px solid var(--card-border); background: var(--chip-bg); color: var(--text);
+  padding: 9px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+.export-actions .chip-btn:hover { background: var(--accent); color: #fff; }
+
+/* Feierabend erreicht: ruhigerer, "abgeschlossener" Zustand statt weiterlaufendem Countdown */
+.countdown-pill.is-complete { background: rgba(34,197,94,0.28); }
+
+/* Law details */
+.law-card summary {
+  list-style: none; display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--text-dim); font-weight: 700;
+}
+.law-card summary::-webkit-details-marker { display: none; }
+.law-card[open] summary { margin-bottom: 12px; }
+.law-card .chevron { transition: transform 0.2s ease; }
+.law-card[open] .chevron { transform: rotate(90deg); }
+.law-body p { font-size: 13px; color: var(--text-dim); line-height: 1.5; margin: 0 0 8px; }
+.law-body p:last-child { margin-bottom: 0; }
+.law-disclaimer { font-style: italic; opacity: 0.8; }
+
+/* Verlauf / Infos */
+.empty-hint { color: var(--text-dim); font-size: 13.5px; line-height: 1.5; margin: 0; }
+.preset-list { display: flex; flex-direction: column; gap: 8px; }
+.preset-item {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--chip-bg); border-radius: 12px; padding: 12px 14px; cursor: pointer;
+  transition: background 0.15s ease;
+}
+.preset-item:hover { background: var(--accent); color: #fff; }
+.preset-item .preset-name { font-weight: 700; font-size: 13.5px; }
+.preset-item .preset-detail { font-size: 12px; color: var(--text-dim); }
+.preset-item:hover .preset-detail { color: rgba(255,255,255,0.85); }
+
+/* Zeitkonto */
+.zeitkonto-card { text-align: center; }
+.zeitkonto-balance { display: flex; align-items: baseline; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.zeitkonto-value { font-size: 32px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.zeitkonto-normal { font-size: 13.5px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.zeitkonto-hint { font-size: 12.5px; color: var(--text-dim); line-height: 1.5; margin: 0; }
+.zeitkonto-value.is-positive, .breakdown-row dd.is-positive { color: var(--green); }
+.zeitkonto-value.is-negative, .breakdown-row dd.is-negative { color: var(--orange); }
+
+/* Wochenübersicht: Navigation */
+.week-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.week-nav-label { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 700; color: var(--text); }
+.week-today-btn { padding: 5px 12px; font-size: 11px; }
+
+/* Wochenübersicht: Tagesliste */
+.week-day-hint { font-size: 12px; color: var(--text-dim); margin: 0 0 10px; line-height: 1.5; }
+.week-days { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.week-day-row {
+  display: flex; flex-direction: column; gap: 10px; background: var(--chip-bg);
+  border-radius: 12px; padding: 8px 12px; min-width: 0;
+}
+.week-day-row.is-today { border: 1px solid var(--accent); }
+.week-day-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.week-day-label { display: flex; flex-direction: column; width: 52px; flex-shrink: 0; }
+.week-day-name { font-size: 12.5px; font-weight: 700; color: var(--text); }
+.week-day-date { font-size: 10.5px; color: var(--text-dim); }
+.week-day-manual { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; }
+.week-day-input {
+  flex: 1; min-width: 0; background: transparent; border: none; color: var(--text);
+  font-size: 15px; font-weight: 700; font-family: inherit; text-align: right;
+}
+.week-day-unit { font-size: 11.5px; color: var(--text-dim); flex-shrink: 0; }
+.week-day-result {
+  flex: 1; min-width: 0; text-align: right; font-size: 15px; font-weight: 700; color: var(--text);
+}
+.week-day-mode-btn {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--card-border);
+  background: var(--card-bg); color: var(--text-dim); font-size: 14px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: color 0.15s ease, background 0.15s ease;
+}
+.week-day-mode-btn:hover { color: var(--text); background: var(--accent); }
+
+/* Stempeluhr: 4 Zeitfelder pro Tag (Kommen -> Gehen (Pause) -> Kommen (Pause) -> Gehen) */
+.week-day-punch { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.punch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-width: 0; }
+/* Das optionale Pausenfeld bekommt eine eigene, volle Zeile */
+.punch-field--wide { grid-column: 1 / -1; }
+.punch-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.punch-field span {
+  font-size: 9.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-faint);
+}
+.punch-input {
+  min-width: 0; width: 100%; background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: 8px; padding: 6px 8px; color: var(--text); font-family: inherit; font-size: 13.5px;
+}
+.week-day-punch-result { margin: 0; font-size: 11.5px; color: var(--text-dim); }
+.week-day-punch-result.is-error { color: var(--orange); font-weight: 600; }
+.week-day-punch-result.is-ok { color: var(--green); font-weight: 600; }
+
+#panel-infos p, #panel-verlauf p { font-size: 13.5px; line-height: 1.6; color: var(--text-dim); margin: 0; }
+#panel-infos .card p { margin-bottom: 4px; }
+.conversion-table { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.conv-row {
+  display: flex; justify-content: space-between; font-size: 13px; padding: 8px 12px;
+  background: var(--chip-bg); border-radius: 10px;
+}
+.conv-row span:last-child { color: var(--accent-2); font-weight: 700; }
+
+.is-hidden { display: none !important; }
+
+/* Bottom nav */
+.bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  display: flex; justify-content: space-between; gap: 2px;
+  background: var(--card-bg); border-top: 1px solid var(--card-border);
+  backdrop-filter: var(--card-blur); -webkit-backdrop-filter: var(--card-blur);
+  padding: 10px 6px calc(10px + env(safe-area-inset-bottom));
+}
+@media (min-width: 900px) {
+  .bottom-nav { position: static; max-width: 760px; margin: 24px auto 0; border-radius: var(--radius-lg); border: 1px solid var(--card-border); }
+}
+/* Seit Version 3.0 sind es fünf Knöpfe. Mit fester Innenabstands-Breite
+   würden sie zusammen breiter als ein 360px-Display – darum teilen sie sich
+   den Platz gleichmäßig auf und dürfen unter ihre Inhaltsbreite schrumpfen. */
+.nav-btn {
+  flex: 1 1 0; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: transparent; border: none; color: var(--text-faint); font-size: 10.5px; font-weight: 600;
+  cursor: pointer; padding: 6px 4px; border-radius: 10px; transition: color 0.15s ease;
+}
+.nav-btn svg { flex-shrink: 0; }
+.nav-btn span {
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.nav-btn.is-active { color: var(--accent-2); }
+
+/* Settings dialog */
+.settings-dialog {
+  border: 1px solid var(--card-border); border-radius: var(--radius-lg);
+  background: var(--card-bg); color: var(--text); padding: 0; width: min(420px, 92vw);
+  backdrop-filter: var(--card-blur);
+}
+.settings-dialog::backdrop { background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); }
+.settings-form { padding: 20px; }
+.settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.settings-header h2 { margin: 0; font-size: 16px; }
+.settings-section { margin-bottom: 18px; }
+.settings-section h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin: 0 0 10px; }
+.theme-picker { display: flex; gap: 10px; }
+.theme-option { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: var(--text-dim); cursor: pointer; flex: 1; text-align: center; }
+.theme-option input { position: absolute; opacity: 0; pointer-events: none; }
+.theme-swatch { width: 100%; height: 44px; border-radius: 10px; border: 2px solid transparent; display: block; }
+.theme-option input:checked + .theme-swatch { border-color: var(--accent); }
+.theme-swatch--1 { background: linear-gradient(135deg, #4834d4, #6c5ce7); }
+.theme-swatch--2 { background: linear-gradient(135deg, #5865f2, #b17cff); }
+.theme-swatch--3 { background: linear-gradient(135deg, #6d28d9, #c026d3); }
+.settings-row { display: flex; align-items: center; gap: 10px; min-width: 0; background: var(--chip-bg); border-radius: 10px; padding: 10px 14px; }
+.settings-input { flex: 1; min-width: 0; background: transparent; border: none; color: var(--text); font-size: 16px; font-weight: 700; font-family: inherit; }
+.settings-unit { font-size: 12px; color: var(--text-dim); }
+.settings-toggle { display: flex; align-items: center; gap: 10px; font-size: 13.5px; cursor: pointer; }
+.danger-btn {
+  width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(239,68,68,0.35);
+  background: rgba(239,68,68,0.1); color: #f87171; font-weight: 700; font-size: 13px; cursor: pointer;
+}
+.danger-btn:hover { background: rgba(239,68,68,0.18); }
+
+/* Mode visibility */
+body[data-mode="forward"] .only-backward { display: none; }
+body[data-mode="backward"] .only-forward { display: none; }
+
+/* Small screens */
+@media (max-width: 380px) {
+  .hero-time { font-size: 46px; }
+  .mini-grid { grid-template-columns: 1fr; }
+}
+
+/* -------------------------------------------------------------------------
+   STEMPELUHR: Status-Card (Version 2.0, wichtigster Bereich der Planen-Seite)
+   ------------------------------------------------------------------------- */
+.status-card { border: 1px solid var(--card-border); }
+.status-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
+.status-badge { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: var(--text); }
+.status-dot2 { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; background: var(--text-faint); }
+[data-status="working"] .status-dot2 { background: var(--green); box-shadow: 0 0 0 4px rgba(34,197,94,0.18); }
+[data-status="onBreak"] .status-dot2 { background: var(--orange); box-shadow: 0 0 0 4px rgba(245,158,11,0.18); }
+[data-status="done"] .status-dot2 { background: var(--accent); box-shadow: 0 0 0 4px rgba(139,92,246,0.18); }
+.status-since { font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+
+.status-main-row { display: flex; gap: 12px; margin: 14px 0 12px; }
+.status-main-metric { flex: 1; min-width: 0; background: var(--chip-bg); border-radius: var(--radius-md); padding: 12px 14px; }
+.status-main-label { display: block; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); font-weight: 700; margin-bottom: 4px; }
+.status-main-value { font-size: 22px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+
+.status-feierabend {
+  display: flex; align-items: baseline; justify-content: space-between;
+  background: var(--hero-gradient); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 12px;
+}
+.status-feierabend-label { font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.85); font-weight: 700; }
+.status-feierabend-time { font-size: 26px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+
+.status-balance { font-size: 13.5px; font-weight: 700; margin: 0 0 8px; }
+.status-balance.is-positive { color: var(--green); }
+.status-balance.is-negative { color: var(--text-dim); }
+.status-pause-hint { font-size: 12.5px; color: var(--text-dim); margin: 0 0 12px; line-height: 1.5; }
+.status-pause-hint.is-warning { color: var(--orange); font-weight: 600; }
+
+.status-events { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.status-event-chip {
+  font-size: 11.5px; font-weight: 600; color: var(--text-dim); background: var(--chip-bg);
+  border-radius: 8px; padding: 5px 9px; font-variant-numeric: tabular-nums;
+}
+
+.status-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.status-btn {
+  flex: 1; min-width: 120px; padding: 14px 10px; border-radius: var(--radius-md); border: none;
+  font-size: 14px; font-weight: 800; cursor: pointer; transition: transform 0.1s ease, filter 0.15s ease;
+}
+.status-btn:active { transform: scale(0.97); }
+.status-btn-primary { background: var(--accent-gradient); color: #fff; }
+.status-btn-secondary { background: var(--chip-bg); border: 1px solid var(--card-border); color: var(--text); }
+.status-btn-danger { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #f87171; }
+.status-btn:hover { filter: brightness(1.08); }
+.status-error { color: #f87171; font-size: 12.5px; font-weight: 600; margin: 10px 0 0; }
+.status-done-hint { color: var(--accent-2); font-size: 13px; font-weight: 700; margin: 10px 0 0; }
+
+.planen-subheading {
+  font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-faint);
+  font-weight: 700; margin: 4px 2px 10px;
+}
+
+/* -------------------------------------------------------------------------
+   VERLAUF: Tageskarten mit echten Stempeluhr-Events
+   ------------------------------------------------------------------------- */
+.week-day-real {
+  flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  cursor: pointer; background: transparent; border: none; padding: 0; margin: 0; font: inherit; color: inherit; text-align: left;
+}
+.week-day-real-times { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.week-day-real-clock { font-size: 12.5px; color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.week-day-real-net { font-size: 15px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.week-day-real-balance { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.week-day-real-balance.is-positive { color: var(--green); }
+.week-day-real-balance.is-negative { color: var(--orange); }
+.week-day-real-balance.is-zero { color: var(--text-dim); }
+.week-day-real-open { color: var(--accent-2); font-weight: 700; }
+
+/* Tages-Detail-Dialog (Verlauf) */
+.day-detail-dialog .settings-form { max-height: 80vh; overflow-y: auto; }
+.day-detail-summary { margin-bottom: 14px; }
+.day-detail-events { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.day-detail-event-row { display: flex; align-items: center; gap: 8px; background: var(--chip-bg); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+.day-detail-event-type { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 700; color: var(--text); }
+.day-detail-event-time { width: 90px; flex-shrink: 0; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 6px 8px; color: var(--text); font-family: inherit; font-size: 13px; min-width: 0; }
+.day-detail-event-remove { flex-shrink: 0; background: transparent; border: none; color: var(--text-dim); font-size: 16px; cursor: pointer; padding: 4px 6px; }
+.day-detail-event-remove:hover { color: #f87171; }
+.day-detail-error { color: #f87171; font-size: 12.5px; font-weight: 600; margin: 0 0 12px; }
+.day-detail-add-btn {
+  width: 100%; border: 1px dashed var(--card-border); background: transparent; color: var(--text-dim);
+  padding: 10px; border-radius: 10px; font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+.day-detail-add-btn:hover { color: var(--text); border-color: var(--accent); }
+.day-detail-add-menu { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.day-detail-add-menu button {
+  border: 1px solid var(--card-border); background: var(--chip-bg); color: var(--text);
+  padding: 8px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; text-align: left;
+}
+
+/* -------------------------------------------------------------------------
+   VERSION 2.1: Zeitkonto-Kacheln, Monatsübersicht, Tagestypen, Einstellungen
+   ------------------------------------------------------------------------- */
+
+/* Zeitkonto: vier Kacheln statt einer einzelnen Zahl */
+.zeitkonto-card { text-align: left; }
+.zeitkonto-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0 10px; }
+.zk-tile { background: var(--chip-bg); border-radius: var(--radius-md); padding: 10px 12px; min-width: 0; }
+.zk-tile--total { border: 1px solid var(--card-border); }
+.zk-label {
+  display: block; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-dim); font-weight: 700; margin-bottom: 4px;
+}
+.zk-value { display: block; font-size: 19px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.zk-value.is-positive { color: var(--green); }
+.zk-value.is-negative { color: var(--orange); }
+.zk-normal { display: block; font-size: 11.5px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.zk-note { display: block; font-size: 10.5px; color: var(--text-faint); margin-top: 2px; }
+
+/* Monatsübersicht */
+.month-weeks { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.month-week-row {
+  display: flex; align-items: center; gap: 10px; background: var(--chip-bg);
+  border-radius: 12px; padding: 10px 12px; min-width: 0; cursor: pointer;
+}
+.month-week-row.is-empty { opacity: 0.55; }
+.month-week-label { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 12.5px; font-weight: 700; color: var(--text); }
+.month-week-range { font-size: 10.5px; font-weight: 500; color: var(--text-dim); }
+.month-week-sum { font-size: 13.5px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.month-week-diff { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; width: 66px; text-align: right; }
+.month-week-diff.is-positive { color: var(--green); }
+.month-week-diff.is-negative { color: var(--orange); }
+.month-week-diff.is-zero { color: var(--text-dim); }
+.month-hint { font-size: 12px; color: var(--text-dim); line-height: 1.5; margin: 0; }
+
+/* Tagestyp-Chip in der Wochenliste */
+.week-day-type {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-dim);
+  border-radius: 8px; padding: 5px 8px; font-size: 13px; line-height: 1; cursor: pointer;
+  font-family: inherit;
+}
+.week-day-type span { font-size: 10.5px; font-weight: 700; }
+.week-day-type.is-special { color: var(--accent-2); border-color: var(--accent); }
+.week-day-type:hover { color: var(--text); }
+.week-day-warn { color: var(--orange); font-weight: 600; }
+
+/* Tagestyp-Auswahl im Tagesdetail */
+.day-detail-heading {
+  font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-dim); font-weight: 700; margin: 0 0 8px;
+}
+.day-detail-types { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.daytype-chip {
+  border: 1px solid var(--card-border); background: var(--chip-bg); color: var(--text-dim);
+  border-radius: 999px; padding: 7px 11px; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+}
+.daytype-chip.is-active { background: var(--accent); border-color: transparent; color: #fff; }
+.day-detail-type-hint { font-size: 12px; color: var(--text-dim); line-height: 1.5; margin: 0 0 14px; }
+.day-detail-type-hint.is-warning { color: var(--orange); font-weight: 600; }
+
+/* Einstellungen: Tagestyp-Gutschriften */
+.daytype-settings { display: flex; flex-direction: column; gap: 8px; }
+.daytype-row {
+  display: flex; align-items: center; gap: 10px; background: var(--chip-bg);
+  border-radius: 10px; padding: 8px 12px; min-width: 0;
+}
+.daytype-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--text); }
+.daytype-note { font-size: 11.5px; color: var(--text-faint); }
+.daytype-input {
+  width: 72px; flex-shrink: 0; min-width: 0; background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: 8px; padding: 6px 8px; color: var(--text); font-family: inherit;
+  font-size: 13.5px; font-weight: 700; text-align: right;
+}
+.daytype-unit { font-size: 11.5px; color: var(--text-dim); flex-shrink: 0; }
+
+/* Einstellungen: neue Gruppierung */
+.settings-field-label {
+  display: block; font-size: 11.5px; color: var(--text-dim); font-weight: 600; margin: 12px 0 6px;
+}
+.settings-section > .settings-field-label:first-of-type { margin-top: 0; }
+.settings-hint { font-size: 12px; color: var(--text-dim); line-height: 1.5; margin: 0 0 10px; }
+/* Arbeitstage-Auswahl (Version 2.8). Bestimmt das Tagessoll, deshalb steht
+   der errechnete Wert direkt als Hinweis darunter. */
+.workday-picker { display: flex; flex-wrap: wrap; gap: 5px; }
+.workday-chip {
+  /* 7 × 34px + 6 × 5px Abstand = 268px – passt auch auf ein 320px-Display in
+     eine einzige Zeile, ohne dass etwas über den Rand ragt. */
+  flex: 1 1 auto; min-width: 34px; padding: 8px 2px; border-radius: var(--radius-sm);
+  border: 1px solid var(--card-border); background: var(--chip-bg); color: var(--text-dim);
+  font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.workday-chip.is-active { background: var(--chip-active-bg); color: #fff; border-color: transparent; }
+
+.settings-select { appearance: none; -webkit-appearance: none; cursor: pointer; }
+.settings-select option { background: var(--card-bg); color: var(--text); }
+.settings-unit-toggle { display: flex; gap: 4px; background: var(--chip-bg); border-radius: 10px; padding: 3px; }
+.settings-unit-toggle .unit-btn { flex: 1; }
+.settings-wide-btn {
+  width: 100%; border: 1px solid var(--card-border); background: var(--chip-bg); color: var(--text);
+  padding: 11px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+.settings-wide-btn:hover { background: var(--accent); color: #fff; }
+.settings-danger {
+  border-top: 1px solid rgba(239,68,68,0.3); padding-top: 16px; margin-top: 22px;
+}
+.settings-danger h3 { color: #f87171; }
+
+@media (max-width: 380px) {
+  .zeitkonto-grid { grid-template-columns: 1fr; }
+}
+
+/* -------------------------------------------------------------------------
+   VERSION 2.2: Backup, Änderungsverlauf, Statistik
+   ------------------------------------------------------------------------- */
+
+/* Backup / Export als Text */
+.settings-section .settings-wide-btn + .settings-wide-btn { margin-top: 8px; }
+.backup-text-block { margin-top: 12px; border-top: 1px solid var(--card-border); padding-top: 10px; }
+.backup-text-block summary {
+  list-style: none; cursor: pointer; font-size: 12px; font-weight: 700;
+  color: var(--text-dim); margin-bottom: 8px;
+}
+.backup-text-block summary::-webkit-details-marker { display: none; }
+.backup-text-block[open] summary { color: var(--text); }
+.backup-textarea {
+  width: 100%; min-width: 0; background: var(--chip-bg); border: 1px solid var(--card-border);
+  border-radius: 10px; padding: 10px 12px; color: var(--text); font-size: 11.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  resize: vertical; line-height: 1.45;
+}
+.backup-text-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.backup-text-actions .chip-btn {
+  flex: 1; min-width: 120px; border: 1px solid var(--card-border); background: var(--chip-bg);
+  color: var(--text); padding: 9px 12px; border-radius: 10px; font-size: 12.5px;
+  font-weight: 700; cursor: pointer;
+}
+.backup-text-actions .chip-btn:hover { background: var(--accent); color: #fff; }
+.backup-status { font-size: 12px; color: var(--green); line-height: 1.5; margin: 10px 0 0; font-weight: 600; }
+.backup-status.is-error { color: var(--orange); }
+
+/* Änderungsverlauf im Tagesdetail */
+.day-detail-history { margin-top: 14px; border-top: 1px solid var(--card-border); padding-top: 10px; }
+.day-detail-history summary {
+  list-style: none; cursor: pointer; font-size: 10.5px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-dim); font-weight: 700;
+}
+.day-detail-history summary::-webkit-details-marker { display: none; }
+.day-detail-history[open] summary { color: var(--text); margin-bottom: 8px; }
+.day-detail-history-list { display: flex; flex-direction: column; gap: 6px; }
+.history-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  background: var(--chip-bg); border-radius: 8px; padding: 7px 10px; min-width: 0;
+}
+.history-what { font-size: 12px; color: var(--text); font-variant-numeric: tabular-nums; }
+.history-when { font-size: 10.5px; color: var(--text-faint); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+
+/* Statistik */
+.stat-range { display: flex; gap: 4px; background: var(--chip-bg); border-radius: 10px; padding: 3px; margin-bottom: 10px; }
+.stat-range .unit-btn { flex: 1; font-size: 11.5px; padding: 8px 6px; }
+.stat-hint { font-size: 12px; color: var(--text-dim); line-height: 1.5; margin: 0 0 12px; }
+.stat-types { display: flex; flex-direction: column; gap: 6px; }
+.stat-type-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--chip-bg); border-radius: 10px; padding: 9px 12px; font-size: 13px; color: var(--text);
+}
+.stat-type-count { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent-2); }
+
+/* Seit Version 3.1 sind es SECHS Einträge. Das flex: 1 1 0 oben verteilt den
+   Platz; hier kommt nur noch weniger Innenabstand und auf sehr schmalen
+   Geräten eine kleinere Schrift dazu, damit die Beschriftungen nicht
+   abgeschnitten werden. */
+.bottom-nav .nav-btn { padding: 6px 1px; }
+@media (max-width: 420px) {
+  .bottom-nav { gap: 0; padding-left: 2px; padding-right: 2px; }
+  .nav-btn { font-size: 9px; gap: 2px; }
+  .nav-btn svg { width: 18px; height: 18px; }
+}
+
+/* -------------------------------------------------------------------------
+   VERSION 2.7: Übertrag, Kalenderansicht, eigene Pausenregeln
+   ------------------------------------------------------------------------- */
+
+/* Übertrags-Zeile unter den Zeitkonto-Kacheln */
+.zeitkonto-carry {
+  font-size: 12.5px; font-weight: 600; color: var(--text-dim);
+  line-height: 1.5; margin: 0 0 8px; overflow-wrap: anywhere;
+}
+.zeitkonto-carry.is-positive { color: var(--green); }
+.zeitkonto-carry.is-negative { color: var(--orange); }
+
+/* Monat: Umschalter Liste/Kalender */
+.month-view-toggle { display: flex; gap: 4px; background: var(--chip-bg); border-radius: 10px; padding: 3px; margin-bottom: 12px; }
+.month-view-toggle .unit-btn { flex: 1; font-size: 11.5px; padding: 7px 6px; }
+
+/* Kalendergitter */
+.month-calendar { margin-bottom: 12px; }
+.calendar-head, .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.calendar-head { margin-bottom: 4px; }
+.calendar-head span {
+  text-align: center; font-size: 10px; font-weight: 700; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.calendar-cell {
+  position: relative; aspect-ratio: 1 / 1; min-width: 0; border-radius: 9px;
+  border: 1px solid transparent; background: var(--chip-bg); color: var(--text-dim);
+  font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.calendar-cell.is-empty { background: transparent; border: none; cursor: default; }
+.calendar-cell.is-none { opacity: 0.4; }
+.calendar-cell.is-positive { background: rgba(34,197,94,0.22); color: var(--green); }
+.calendar-cell.is-negative { background: rgba(245,158,11,0.22); color: var(--orange); }
+.calendar-cell.is-zero { background: rgba(255,255,255,0.10); color: var(--text); }
+.calendar-cell.is-type { background: rgba(139,92,246,0.22); color: var(--accent-2); }
+.calendar-cell.is-open { background: rgba(59,130,246,0.22); color: var(--blue); }
+.calendar-cell.is-today { border-color: var(--accent); }
+.calendar-icon { position: absolute; bottom: 2px; right: 3px; font-size: 9px; }
+
+.month-legend {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;
+  font-size: 11px; color: var(--text-dim);
+}
+.month-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.legend-dot.is-positive { background: rgba(34,197,94,0.6); }
+.legend-dot.is-negative { background: rgba(245,158,11,0.6); }
+.legend-dot.is-zero { background: rgba(255,255,255,0.25); }
+.legend-dot.is-type { background: rgba(139,92,246,0.6); }
+.legend-dot.is-open { background: rgba(59,130,246,0.6); }
+
+/* Baukasten für eigene Pausenregeln */
+.rule-builder { margin-top: 12px; border-top: 1px solid var(--card-border); padding-top: 10px; }
+.rule-builder summary {
+  list-style: none; cursor: pointer; font-size: 12px; font-weight: 700; color: var(--text-dim); margin-bottom: 8px;
+}
+.rule-builder summary::-webkit-details-marker { display: none; }
+.rule-builder[open] summary { color: var(--text); }
+.rule-step-row {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
+  font-size: 12px; color: var(--text-dim); min-width: 0; flex-wrap: wrap;
+}
+.rule-step-from, .rule-step-pause {
+  width: 58px; flex-shrink: 0; min-width: 0; background: var(--chip-bg);
+  border: 1px solid var(--card-border); border-radius: 8px; padding: 7px 8px;
+  color: var(--text); font-family: inherit; font-size: 13px; font-weight: 700; text-align: right;
+}
+.rule-status { font-size: 12px; font-weight: 600; color: var(--green); margin: 8px 0 0; line-height: 1.5; }
+.rule-status.is-error { color: var(--orange); }
+.rule-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.rule-item {
+  display: flex; align-items: center; gap: 8px; background: var(--chip-bg);
+  border-radius: 10px; padding: 8px 10px; min-width: 0;
+}
+.rule-item-text { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 12px; color: var(--text-dim); }
+.rule-item-text strong { font-size: 12.5px; color: var(--text); }
+.rule-remove {
+  flex-shrink: 0; background: transparent; border: none; color: var(--text-dim);
+  font-size: 16px; cursor: pointer; padding: 2px 6px;
+}
+.rule-remove:hover { color: #f87171; }
+
+/* -------------------------------------------------------------------------
+   ERINNERUNGS-HINWEIS (Version 2.4)
+   Liegt bewusst fest oben am Bildschirm und nicht im Scrollbereich: Er soll
+   auch dann auffallen, wenn gerade der Verlauf oder die Statistik offen ist.
+   ------------------------------------------------------------------------- */
+.reminder-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+  display: flex; align-items: flex-start; gap: 12px;
+  background: var(--accent-gradient); color: #fff;
+  padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+  box-shadow: var(--shadow);
+}
+.reminder-banner-text { flex: 1; min-width: 0; font-size: 13px; line-height: 1.45; }
+.reminder-banner-text strong { display: block; font-size: 13.5px; margin-bottom: 2px; }
+.reminder-banner-text span { opacity: 0.92; overflow-wrap: anywhere; }
+.reminder-banner-close {
+  flex-shrink: 0; background: rgba(0,0,0,0.2); border: none; color: #fff;
+  width: 30px; height: 30px; border-radius: 8px; font-size: 14px; line-height: 1; cursor: pointer;
+}
+
+/* -------------------------------------------------------------------------
+   ÜBERLAUF-SCHUTZ (Version 2.3)
+   Ursache aller "ragt über den Rand"-Fälle: Flex- und Grid-Kinder haben
+   standardmäßig min-width:auto und schrumpfen deshalb NICHT unter die Breite
+   ihres Inhalts. Eine lange Beschriftung schiebt die ganze Zeile nach außen,
+   und weil html/body overflow-x:hidden haben, wird sie abgeschnitten statt
+   scrollbar. In Sitzung 8 wurde das nur für die Zeit- und Zahlenfelder
+   behoben – hier folgen alle übrigen Stellen, damit der Fehler nicht an der
+   nächsten Zeile wieder auftaucht.
+   Zusätzlicher Auslöser: eine größer eingestellte System-Schriftgröße auf dem
+   Handy. Dann wächst der Inhalt, der Container aber nicht.
+   ------------------------------------------------------------------------- */
+
+/* Modus-Umschalter „Feierabend berechnen / Arbeitsbeginn berechnen" */
+.mode-btn { min-width: 0; text-align: center; line-height: 1.25; }
+.mode-btn svg { flex-shrink: 0; }
+
+/* Aufschlüsselung sowie Wochen-/Monatssummen */
+.breakdown-row { gap: 12px; }
+.breakdown-row dt { min-width: 0; overflow-wrap: anywhere; }
+.breakdown-row dd { min-width: 0; text-align: right; overflow-wrap: anywhere; }
+
+/* Hero, Fortschritt, Pausenstatus, Zuhause */
+.hero-time-row { min-width: 0; }
+.progress-meta { gap: 12px; }
+.progress-meta > * { min-width: 0; }
+.progress-detail { text-align: right; overflow-wrap: anywhere; }
+.mini-grid > * { min-width: 0; }
+.pause-status { min-width: 0; }
+.pause-status > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.law-hint { overflow-wrap: anywhere; }
+.home-arrival-display { gap: 12px; }
+.home-arrival-display > * { min-width: 0; }
+.appointment-next-gap { overflow-wrap: anywhere; }
+
+/* Stempeluhr-Karte und Zeitkonto-Kacheln */
+.status-feierabend { gap: 12px; }
+.status-feierabend > * { min-width: 0; }
+.status-feierabend-label { overflow-wrap: anywhere; }
+.status-main-value, .zk-value { overflow-wrap: anywhere; }
+.zk-tile > * { min-width: 0; }
+
+/* Listenzeilen in Statistik, Einstellungen und Änderungsverlauf */
+.stat-type-row > * { min-width: 0; }
+.daytype-row > * { min-width: 0; }
+.history-row > * { min-width: 0; }
+.settings-unit, .settings-hint { overflow-wrap: anywhere; }
+
+/* Zwei Beschriftungen je Umschalt-Knopf: lang auf breiten Displays, kurz auf
+   schmalen. So kann der Knopf rechnerisch nicht mehr über den Rand ragen,
+   ohne dass auf großen Bildschirmen Klartext verloren geht. */
+.mode-btn-short { display: none; }
+
+@media (max-width: 460px) {
+  .mode-btn-long { display: none; }
+  .mode-btn-short { display: inline; }
+  .mode-btn { font-size: 12px; padding: 10px 6px; gap: 5px; }
+}
+
+/* Sehr schmale Geräte oder große System-Schrift: noch kompakter, und der
+   seitliche Rand der ganzen Seite wird schmaler, damit mehr Platz bleibt. */
+@media (max-width: 400px) {
+  .mode-btn { font-size: 11.5px; padding: 10px 4px; gap: 4px; }
+  .mode-btn svg { display: none; }
+  .quick-chips .chip { padding: 7px 10px; }
+  .app-shell { padding-left: 12px; padding-right: 12px; }
+  .card { padding: 15px 14px; }
+  .input-grid .card { padding: 13px 14px; }
+}
+
+/* -------------------------------------------------------------------------
+   KOMPAKTERE PLANUNGS-KARTEN (Version 2.5)
+   Die Karten "Arbeitsbeginn" und "Geplante Nettoarbeitszeit" waren auf dem
+   Handy unnötig hoch und breit. Etwas kleinere Schrift und weniger Innenabstand
+   sparen spürbar Platz, ohne dass die Werte schlechter lesbar werden.
+   ------------------------------------------------------------------------- */
+.input-grid .card { padding: 14px 16px; }
+.input-grid .card-label { margin-bottom: 8px; }
+.time-display { font-size: 26px; }
+.industrial-row { gap: 8px; }
+.industrial-value { font-size: 24px; }
+.round-btn { width: 36px; height: 36px; font-size: 18px; }
+.industrial-hint { margin-top: 8px; font-size: 12px; }
+.quick-chips { margin-top: 10px; gap: 6px; }
+.chip { padding: 6px 11px; font-size: 12px; }
+
+/* Kopfbereich etwas gedrungener, damit mehr Inhalt oben sichtbar bleibt */
+.app-header { margin-bottom: 16px; }
+
+/* -------------------------------------------------------------------------
+   DRUCK / PDF-EXPORT
+   Wird per window.print() ausgelöst (Button "Drucken / als PDF" im Verlauf).
+   Nutzt den Browser-eigenen "Als PDF speichern"-Druckdialog statt einer
+   externen PDF-Bibliothek, damit die Offline-PWA von keinem CDN abhängt.
+   ------------------------------------------------------------------------- */
+@media print {
+  .bottom-nav, .settings-dialog, #settingsBtn, .mode-toggle,
+  .export-actions, .preset-form, .appointment-form,
+  .week-day-mode-btn, .week-day-punch, .week-day-hint,
+  .status-actions, #dayDetailDialog, .backup-text-block, .reminder-banner,
+  #panel-planen, #panel-infos, #panel-statistik { display: none !important; }
+
+  body, .app-shell { background: #fff !important; padding: 0 !important; margin: 0 !important; }
+  .card, .zeitkonto-card { background: #fff !important; border: 1px solid #ccc !important; box-shadow: none !important; backdrop-filter: none !important; color: #111 !important; }
+  .card-label, .breakdown-row dt, .zeitkonto-hint, .week-day-date, .progress-detail { color: #444 !important; }
+  .breakdown-row dd, .zeitkonto-value, .week-day-name, .week-day-input, .week-day-result { color: #000 !important; }
+  #panel-verlauf.is-hidden { display: block !important; }
+  .tab-panel.is-hidden { display: none !important; }
+  #panel-verlauf { display: block !important; }
+}
+
+/* ==========================================================================
+   ZEITSTEMPEL (iPhone-Version für Arturs Freundin)
+   Design "Rosé": dunkel, warm, Akzente Rosé und Champagner.
+   Kontrast (WCAG): Text #F5EDEA auf #17121A ≈ 16:1, gedämpft #B9AAB0 ≈ 8:1,
+   Rosé #E6A5B0 ≈ 9:1, dunkler Text #2A1620 auf Rosé ≈ 8:1.
+   ========================================================================== */
+body[data-theme="rose"] {
+  --bg: #17121A;
+  --bg-gradient: radial-gradient(circle at 85% -10%, #3a2530 0%, #17121A 55%);
+  --card-bg: #221A24;
+  --card-border: rgba(234, 210, 168, 0.12);
+  --card-blur: none;
+  --text: #F5EDEA;
+  --text-dim: #B9AAB0;
+  --text-faint: #8C7F86;
+  --accent: #E6A5B0;
+  --accent-2: #EAD2A8;
+  --accent-gradient: linear-gradient(135deg, #E6A5B0 0%, #EAD2A8 100%);
+  --hero-gradient: linear-gradient(135deg, #3a2430 0%, #2b1f2a 60%, #33282a 100%);
+  --chip-bg: #2C222E;
+  --chip-active-bg: #E6A5B0;
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --shadow: 0 10px 28px rgba(0,0,0,0.45);
+  --green: #9FD4A8;
+  --orange: #EAC48A;
+  --blue: #A9B8E8;
+}
+body[data-theme="rose"] .status-btn-primary,
+body[data-theme="rose"] .chip-btn.is-active,
+body[data-theme="rose"] .nav-btn.is-active .nav-pill { color: #2A1620; }
+body[data-theme="rose"] .status-btn-primary { color: #2A1620; }
+body[data-theme="rose"] .status-btn-danger { background: rgba(230,165,176,0.14); border-color: rgba(230,165,176,0.45); color: #F3C4CC; }
+body[data-theme="rose"] .nav-btn.is-active { color: var(--accent); }
+body[data-theme="rose"] .bottom-nav { background: rgba(23,18,26,0.96); border-top: 1px solid rgba(234,210,168,0.08); }
+body[data-theme="rose"] .is-positive { color: var(--green); }
+body[data-theme="rose"] .is-negative { color: #F3A6A6; }
+.theme-swatch--rose { background: linear-gradient(135deg, #E6A5B0, #EAD2A8); }
+
+/* Ausgeblendete Teile aus Arturs App (bleiben im DOM) */
+.zs-off, [hidden].zs-off { display: none !important; }
+
+/* Heute auf einen Blick */
+.zs-today {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px;
+  padding: 22px 16px 18px; background: var(--hero-gradient);
+}
+.zs-today-label { font-size: 13px; font-weight: 700; color: var(--text-dim); letter-spacing: 0.04em; }
+.zs-today-time {
+  font-size: 64px; font-weight: 800; line-height: 1.05; letter-spacing: 0.01em;
+  background: var(--accent-gradient); -webkit-background-clip: text; background-clip: text; color: transparent;
+  font-variant-numeric: tabular-nums;
+}
+.zs-today-sub { font-size: 13.5px; color: var(--text-dim); }
+.zs-today-bus { margin: 8px 0 0; font-size: 13px; color: var(--text); background: rgba(0,0,0,0.2); border-radius: 12px; padding: 8px 12px; }
+.zs-today-konto { margin: 8px 0 0; font-size: 15px; font-weight: 700; color: var(--accent-2); font-variant-numeric: tabular-nums; }
+
+/* Nachtragen */
+.zs-fix-card { border: 1px solid rgba(234,196,138,0.45); background: rgba(234,196,138,0.08); display: flex; flex-direction: column; gap: 10px; }
+.zs-fix-text { margin: 0; font-weight: 700; color: var(--orange); }
+.zs-fix-btn { flex: none; }
+
+/* Stempeln: Kommen/Gehen groß, Pause dezent in der zweiten Reihe */
+.status-actions #btnKommen, .status-actions #btnGehen, .status-actions #zsBtnSuggest { flex: 1 1 100%; padding: 18px 10px; font-size: 17px; }
+.status-actions .zs-pause-btn { flex: 1 1 100%; padding: 10px; font-size: 13.5px; font-weight: 700; background: transparent; border: 1px solid var(--card-border); color: var(--text-dim); }
+.status-actions #btnPauseEnd.zs-pause-btn { border-color: var(--accent); color: var(--accent); }
+
+.zs-plan-for { font-weight: 600; color: var(--text-dim); text-transform: none; letter-spacing: 0; }
+.zs-wide { width: 100%; box-sizing: border-box; }
+input.settings-input.zs-wide { background: var(--chip-bg); border-radius: 10px; padding: 10px 14px; margin-bottom: 4px; }
+.zs-three { flex-wrap: wrap; gap: 8px; background: transparent; padding: 0; }
+.zs-mini { flex: 1 1 30%; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-dim); }
+.zs-mini .settings-input { background: var(--chip-bg); border-radius: 10px; padding: 10px; width: 100%; box-sizing: border-box; }
+
+/* Update-Hinweis */
+.update-banner {
+  position: fixed; left: 12px; right: 12px; top: calc(10px + env(safe-area-inset-top)); z-index: 60;
+  border: none; border-radius: 14px; padding: 14px; font-weight: 800; font-size: 14px;
+  background: var(--accent-gradient); color: #2A1620; box-shadow: var(--shadow);
+}
+.update-banner.is-hidden { display: none; }
+
+/* Vier Tabs: etwas mehr Platz je Knopf */
+.bottom-nav .nav-btn span { font-size: 11px; }
+
+/* Startseite zeigt Feierabend und Konto schon oben – in der Stempelkarte nicht doppelt */
+body #statusFeierabendRow, body #statusBalance { display: none !important; }
+body[data-theme="rose"] .week-today-btn { background: var(--chip-bg); color: var(--text); border: 1px solid var(--card-border); }
+body[data-theme="rose"] .chip-btn { background: var(--chip-bg); color: var(--text); border: 1px solid var(--card-border); }

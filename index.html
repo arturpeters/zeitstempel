@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<!-- ZEITSTEMPEL (Sicherheit): Die Seite darf nur eigene Dateien laden und
+     mit niemandem außer ihrer eigenen Adresse reden. Kein fremdes Skript,
+     kein Tracking, kein Abfluss von Daten an fremde Server – selbst wenn
+     irgendwo eine Lücke wäre, blockiert der Browser das. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; manifest-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; object-src 'none'" />
+<meta name="referrer" content="no-referrer" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Zeitstempel</title>
+<meta name="description" content="Arbeitszeit festhalten, Feierabend und Zeitkonto im Blick." />
+<meta name="theme-color" content="#17121A" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Zeitstempel" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="format-detection" content="telephone=no" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="assets/icons/icon-192.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-theme="rose" data-mode="forward">
+
+  <!-- Erinnerungs-Hinweis in der App: greift immer, auch wenn die
+       App-Umgebung keine System-Benachrichtigungen unterstützt. -->
+  <div class="reminder-banner is-hidden" id="reminderBanner" role="status" aria-live="polite">
+    <div class="reminder-banner-text">
+      <strong id="reminderTitle"></strong>
+      <span id="reminderBody"></span>
+    </div>
+    <button type="button" class="reminder-banner-close" id="reminderClose" aria-label="Hinweis schließen">✕</button>
+  </div>
+
+  <!-- ZEITSTEMPEL: neue Version verfügbar (Service Worker, siehe js/pwa.js) -->
+  <button type="button" class="update-banner is-hidden" id="updateBanner">✨ Neue Version – tippen zum Aktualisieren</button>
+
+  <div class="app-shell">
+
+    <!-- ============ HEADER ============ -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+        </span>
+        <div class="brand-text">
+          <h1>Zeitstempel</h1>
+          <p class="brand-sub" id="zsDateLine">Arbeitszeit · Feierabend · Konto</p>
+        </div>
+      </div>
+      <button class="icon-btn" id="settingsBtn" aria-label="Einstellungen öffnen" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      </button>
+    </header>
+
+    <!-- ============ TAB: PLANEN ============ -->
+    <main class="tab-panel" id="panel-planen" data-panel="planen">
+
+      <!-- ============ ZEITSTEMPEL: Nachtragen-Hinweis ============ -->
+      <section class="card zs-fix-card is-hidden" id="zsFixCard" role="status">
+        <p class="zs-fix-text" id="zsFixText"></p>
+        <button type="button" class="status-btn status-btn-primary zs-fix-btn" id="zsFixBtn">Jetzt nachtragen</button>
+      </section>
+
+      <!-- ============ ZEITSTEMPEL: Heute auf einen Blick ============ -->
+      <section class="card zs-today" id="zsToday" aria-live="polite">
+        <span class="zs-today-label" id="zsTodayLabel">Feierabend</span>
+        <span class="zs-today-time" id="zsTodayTime">–</span>
+        <span class="zs-today-sub" id="zsTodaySub"></span>
+        <p class="zs-today-bus is-hidden" id="zsTodayBus"></p>
+        <p class="zs-today-konto" id="zsTodayKonto"></p>
+      </section>
+
+      <!-- ============ STEMPELUHR (Live-Status, wichtigster Bereich) ============ -->
+      <section class="card status-card" id="statusCard" data-status="idle">
+        <div class="status-top">
+          <span class="status-badge" id="statusBadge">
+            <span class="status-dot2" id="statusDot"></span>
+            <span id="statusBadgeText">Noch nicht begonnen</span>
+          </span>
+          <span class="status-since is-hidden" id="statusSince"></span>
+        </div>
+
+        <div class="status-main-row is-hidden" id="statusMainRow">
+          <div class="status-main-metric">
+            <span class="status-main-label">Heute gearbeitet</span>
+            <span class="status-main-value" id="statusWorked">0:00 h</span>
+          </div>
+          <div class="status-main-metric" id="statusRemainingWrap">
+            <span class="status-main-label" id="statusRemainingLabel">Noch erforderlich</span>
+            <span class="status-main-value" id="statusRemaining">–</span>
+          </div>
+        </div>
+
+        <div class="status-feierabend is-hidden" id="statusFeierabendRow">
+          <span class="status-feierabend-label">Voraussichtlicher Feierabend</span>
+          <span class="status-feierabend-time" id="statusFeierabendTime">–</span>
+        </div>
+
+        <p class="status-balance is-hidden" id="statusBalance"></p>
+        <p class="status-pause-hint is-hidden" id="statusPauseHint"></p>
+
+        <div class="status-events is-hidden" id="statusEvents" aria-label="Heutige Erfassung"></div>
+
+        <div class="status-actions" id="statusActions">
+          <button type="button" class="status-btn status-btn-primary is-hidden" id="zsBtnSuggest">Im Betrieb ab 13:55</button>
+          <button type="button" class="status-btn status-btn-primary" id="btnKommen">Kommen</button>
+          <button type="button" class="status-btn status-btn-danger is-hidden" id="btnGehen">Gehen</button>
+          <button type="button" class="status-btn status-btn-secondary zs-pause-btn is-hidden" id="btnPauseStart">☕ Pause starten</button>
+          <button type="button" class="status-btn status-btn-primary zs-pause-btn is-hidden" id="btnPauseEnd">▶ Pause beenden</button>
+        </div>
+        <p class="status-error is-hidden" id="statusError" role="alert"></p>
+        <p class="status-done-hint is-hidden" id="statusDoneHint">Tag abgeschlossen ✅ Korrigieren: Konto → Woche → Tag antippen.</p>
+      </section>
+
+      <!-- ============ ZEITSTEMPEL: Tagesplan (zugeklappt) ============ -->
+      <details class="card collapsible-card zs-plan-card" data-card="zsplan">
+        <summary class="card-label card-summary">
+          <span><span class="card-label-icon">🌙</span> Tagesplan <span class="zs-plan-for" id="zsPlanFor"></span></span>
+        </summary>
+        <dl class="breakdown-list" id="zsPlanList"></dl>
+        <p class="settings-hint" id="zsPlanHint"></p>
+      </details>
+
+      <!-- ZEITSTEMPEL: Arturs Planungswerkzeuge sind ausgeblendet, nicht gelöscht.
+           app.js rechnet weiter hinein; so bleibt der Code nah an Version 3.1. -->
+      <div class="zs-off" hidden>
+      <!-- Modus-Umschalter -->
+      <p class="planen-subheading">Planung &amp; Was-wäre-wenn</p>
+      <div class="mode-toggle" role="tablist" aria-label="Berechnungsmodus">
+        <button class="mode-btn is-active" id="modeForwardBtn" role="tab" aria-selected="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+          <span class="mode-btn-long">Feierabend berechnen</span>
+          <span class="mode-btn-short">Feierabend</span>
+        </button>
+        <button class="mode-btn" id="modeBackwardBtn" role="tab" aria-selected="false">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+          <span class="mode-btn-long">Arbeitsbeginn berechnen</span>
+          <span class="mode-btn-short">Arbeitsbeginn</span>
+        </button>
+      </div>
+
+      <div class="input-grid">
+        <!-- Arbeitsbeginn (Vorwärts) -->
+        <section class="card only-forward" aria-labelledby="startLabel">
+          <h2 class="card-label" id="startLabel"><span class="card-label-icon">◷</span> Arbeitsbeginn</h2>
+          <div class="time-row">
+            <input type="time" id="startTimeInput" class="time-display" value="07:00" aria-label="Arbeitsbeginn Uhrzeit" />
+            <button class="chip-btn now-btn" id="nowBtn">Jetzt</button>
+          </div>
+          <div class="quick-chips" id="startQuickChips">
+            <button class="chip" data-time="06:00">06:00</button>
+            <button class="chip" data-time="07:00">07:00</button>
+            <button class="chip" data-time="08:00">08:00</button>
+          </div>
+        </section>
+
+        <!-- Gewünschter Feierabend (Rückwärts) -->
+        <section class="card only-backward" aria-labelledby="endLabel">
+          <h2 class="card-label" id="endLabel"><span class="card-label-icon">◷</span> Gewünschter Feierabend</h2>
+          <div class="time-row">
+            <input type="time" id="desiredEndInput" class="time-display" value="16:00" aria-label="Gewünschter Feierabend" />
+          </div>
+          <div class="quick-chips" id="endQuickChips">
+            <button class="chip" data-time="15:00">15:00</button>
+            <button class="chip" data-time="16:00">16:00</button>
+            <button class="chip" data-time="17:00">17:00</button>
+            <button class="chip" data-time="18:00">18:00</button>
+          </div>
+        </section>
+
+        <!-- Nettoarbeitszeit -->
+        <section class="card" aria-labelledby="netLabel">
+          <h2 class="card-label" id="netLabel"><span class="card-label-icon">📊</span> Geplante Nettoarbeitszeit</h2>
+          <div class="industrial-row">
+            <button class="round-btn" id="decBtn" aria-label="Industriestunden verringern">−</button>
+            <div class="industrial-value-wrap">
+              <input type="text" inputmode="decimal" id="industrialInput" class="industrial-value" value="7,20" aria-label="Industriestunden" />
+              <span class="industrial-unit">h</span>
+            </div>
+            <button class="round-btn" id="incBtn" aria-label="Industriestunden erhöhen">+</button>
+          </div>
+          <p class="industrial-hint" id="industrialHint">= 7:12 normale Arbeitszeit</p>
+        </section>
+      </div>
+
+      <!-- Hero: Feierabend / Arbeitsbeginn -->
+      <section class="hero-card" aria-live="polite">
+        <p class="hero-label" id="heroLabel">DEIN FEIERABEND</p>
+        <div class="hero-time-row">
+          <span class="hero-time" id="heroTime">14:42</span>
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hero-clock-icon"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+        </div>
+        <div class="countdown-pill" id="countdownPill">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l4 2"></path><circle cx="12" cy="14" r="8"></circle><path d="M9 2h6"></path></svg>
+          <span id="countdownText">Noch 2 Std. 09 Min.</span>
+        </div>
+      </section>
+
+      <!-- Arbeitsfortschritt -->
+      <section class="card progress-card only-forward">
+        <h2 class="card-label"><span class="card-label-icon">🚩</span> Arbeitsfortschritt</h2>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-meta">
+          <span id="progressPercent">0 %</span>
+          <span id="progressDetail" class="progress-detail">Nettoarbeitszeit: 0:00 von 7:12 Std.</span>
+        </div>
+      </section>
+
+      <!-- Pausenstatus + Gesetz -->
+      <div class="mini-grid">
+        <section class="card mini-card">
+          <h3 class="card-label small"><span class="card-label-icon">☕</span> Pausenstatus</h3>
+          <p class="pause-status" id="pauseStatus">
+            <span class="status-dot" id="pauseStatusDot"></span>
+            <span id="pauseStatusText">30 Min. Pause erforderlich</span>
+          </p>
+        </section>
+        <section class="card mini-card">
+          <h3 class="card-label small"><span class="card-label-icon">⚖</span> § 4 ArbZG</h3>
+          <p class="law-hint">Gesetzliche Pausenregelung</p>
+        </section>
+      </div>
+
+      <!-- Aufschlüsselung -->
+      <details class="card breakdown-card collapsible-card" data-card="breakdown" open>
+        <summary>
+          <span><span class="card-label-icon">📋</span> Aufschlüsselung</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron"><path d="M9 18l6-6-6-6"></path></svg>
+        </summary>
+        <dl class="breakdown-list" id="breakdownList">
+          <div class="breakdown-row is-hidden" id="bdCommuteRow"><dt id="bdCommuteLabel">Losfahrt von zuhause</dt><dd id="bdCommute">06:35</dd></div>
+          <div class="breakdown-row"><dt>Arbeitsbeginn</dt><dd id="bdStart">07:00</dd></div>
+          <div class="breakdown-row"><dt>Nettoarbeitszeit</dt><dd id="bdIndustrial">7,20 h Industrie</dd></div>
+          <div class="breakdown-row sub"><dt>Normale Arbeitszeit</dt><dd id="bdNormal">7:12 h</dd></div>
+          <div class="breakdown-row"><dt>Gesetzliche Pause</dt><dd id="bdPause">30 Min.</dd></div>
+          <div class="breakdown-row"><dt>Gesamtdauer im Betrieb</dt><dd id="bdTotal">7:42 h</dd></div>
+          <div class="breakdown-row highlight"><dt id="bdEndLabel">Feierabend</dt><dd id="bdEnd">14:42</dd></div>
+          <div class="breakdown-row is-hidden" id="bdBufferRow"><dt>Bereit zum Losgehen</dt><dd id="bdBuffer">14:57</dd></div>
+        </dl>
+      </details>
+
+      <!-- Zuhause (automatisch: Feierabend + Rückweg, siehe Einstellungen → Arbeitsweg) -->
+      <details class="card home-card collapsible-card" data-card="home">
+        <summary>
+          <span><span class="card-label-icon">🏠</span> Zuhause</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron"><path d="M9 18l6-6-6-6"></path></svg>
+        </summary>
+        <div class="home-arrival-display">
+          <span class="home-arrival-label">Ankunft zuhause</span>
+          <span class="home-arrival-time" id="homeArrivalAuto">–</span>
+        </div>
+        <p class="home-hint" id="homeHint">Trag unter Einstellungen → Arbeitsweg deinen Rückweg ein, damit die Ankunft automatisch berechnet wird.</p>
+
+        <details class="home-reverse">
+          <summary>Ich möchte zu einer bestimmten Zeit zuhause sein</summary>
+          <div class="time-row">
+            <input type="time" id="desiredHomeArrivalInput" class="time-display" aria-label="Gewünschte Ankunft zuhause" />
+          </div>
+          <p class="home-reverse-result" id="homeReverseResult"></p>
+        </details>
+      </details>
+
+      <!-- Morgen-Planer: Wann muss ich aufstehen? (Version 2.8) -->
+      <details class="card morning-card collapsible-card" data-card="morning" open>
+        <summary>
+          <span><span class="card-label-icon">⏰</span> Wann aufstehen?</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron"><path d="M9 18l6-6-6-6"></path></svg>
+        </summary>
+        <div class="morning-result">
+          <span class="morning-result-label">Aufstehen um</span>
+          <span class="morning-result-time" id="morningWakeTime">–</span>
+        </div>
+        <dl class="breakdown-list" id="morningBreakdown"></dl>
+
+        <div class="morning-inputs">
+          <label class="morning-field">
+            <span>Arbeitsbeginn</span>
+            <input type="time" id="morningStartInput" class="morning-input" aria-label="Geplanter Arbeitsbeginn" />
+          </label>
+          <label class="morning-field">
+            <span>Fertigmachen (Min.)</span>
+            <input type="text" inputmode="numeric" id="morningPrepInput" class="morning-input" placeholder="40" aria-label="Zeit zum Fertigmachen in Minuten" />
+          </label>
+          <label class="morning-field">
+            <span>Puffer (Min.)</span>
+            <input type="text" inputmode="numeric" id="morningBufferInput" class="morning-input" placeholder="5" aria-label="Zusätzlicher Puffer in Minuten" />
+          </label>
+        </div>
+        <p class="morning-hint" id="morningHint"></p>
+      </details>
+
+      <!-- Aktivitäten vor und nach der Arbeit (Version 2.9) -->
+      <details class="card activity-card collapsible-card" data-card="activity">
+        <summary>
+          <span><span class="card-label-icon">🏋</span> Vor &amp; nach der Arbeit</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron"><path d="M9 18l6-6-6-6"></path></svg>
+        </summary>
+
+        <p class="activity-intro">
+          Orte, an denen du auf dem Weg Halt machst. Einmal anlegen, danach je Tag antippen –
+          die Aufstehzeit und die Ankunft zuhause rechnen sich automatisch mit.
+        </p>
+
+        <span class="activity-slot-label">Vor der Arbeit</span>
+        <div class="activity-chips" id="activityBeforeChips" role="group" aria-label="Aktivität vor der Arbeit"></div>
+        <label class="activity-override is-hidden" id="activityBeforeOverride">
+          <span>Heute nur</span>
+          <input type="text" inputmode="numeric" id="activityBeforeOverrideInput" class="activity-input"
+                 aria-label="Abweichende Dauer nur für heute" />
+          <span class="activity-override-note">leer = wie gespeichert</span>
+        </label>
+        <dl class="breakdown-list activity-plan" id="activityBeforePlan"></dl>
+
+        <span class="activity-slot-label">Nach der Arbeit</span>
+        <div class="activity-chips" id="activityAfterChips" role="group" aria-label="Aktivität nach der Arbeit"></div>
+        <label class="activity-override is-hidden" id="activityAfterOverride">
+          <span>Heute nur</span>
+          <input type="text" inputmode="numeric" id="activityAfterOverrideInput" class="activity-input"
+                 aria-label="Abweichende Dauer nur für heute" />
+          <span class="activity-override-note">leer = wie gespeichert</span>
+        </label>
+        <dl class="breakdown-list activity-plan" id="activityAfterPlan"></dl>
+
+        <details class="activity-manage" id="activityManage">
+          <summary>Aktivitäten verwalten</summary>
+
+          <div class="activity-list" id="activityList"></div>
+          <p class="activity-empty" id="activityEmpty">Noch nichts angelegt.</p>
+
+          <form class="activity-form" id="activityForm">
+            <input type="text" id="activityLabelInput" class="activity-input activity-input-wide"
+                   placeholder="Name, z. B. Gym" aria-label="Name der Aktivität" required maxlength="24" />
+            <div class="activity-form-row">
+              <label class="activity-field">
+                <span>Dauer (Std:Min)</span>
+                <input type="text" inputmode="numeric" id="activityDurationInput" class="activity-input"
+                       placeholder="1:20" aria-label="Dauer, z. B. 1:20 oder 80 Minuten" required />
+                <span class="duration-echo" id="activityDurationEcho"></span>
+              </label>
+              <label class="activity-field">
+                <span>Weg von zuhause</span>
+                <input type="text" inputmode="numeric" id="activityTravelHomeInput" class="activity-input"
+                       placeholder="10" aria-label="Weg von zuhause in Minuten" />
+              </label>
+              <label class="activity-field">
+                <span>Weg zur Arbeit</span>
+                <input type="text" inputmode="numeric" id="activityTravelWorkInput" class="activity-input"
+                       placeholder="15" aria-label="Weg von dort zur Arbeit in Minuten" />
+              </label>
+            </div>
+            <button type="submit" class="chip-btn settings-wide-btn" id="activitySaveBtn">Aktivität speichern</button>
+            <button type="button" class="chip-btn settings-wide-btn is-hidden" id="activityCancelBtn">Bearbeiten abbrechen</button>
+          </form>
+          <p class="activity-status is-hidden" id="activityStatus" role="alert"></p>
+          <p class="activity-note">
+            Dauer als <strong>1:20</strong> (Std:Min) oder als reine Minutenzahl <strong>80</strong> –
+            beides ergibt dasselbe. Hier gelten <strong>normale</strong> Stunden, keine
+            Industriestunden; die sind nur für die Arbeitszeit selbst.
+            Eine bestehende Aktivität antippen, um sie zu ändern.
+            Für Hin- und Rückweg derselben Strecke wird dieselbe Dauer angenommen.
+          </p>
+        </details>
+      </details>
+
+      <!-- Schlafrechner (Version 3.0) -->
+      <details class="card sleep-card collapsible-card" data-card="sleep">
+        <summary>
+          <span><span class="card-label-icon">🌙</span> Wann ins Bett?</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron"><path d="M9 18l6-6-6-6"></path></svg>
+        </summary>
+        <div class="morning-result">
+          <span class="morning-result-label">Ins Bett um</span>
+          <span class="morning-result-time" id="sleepBedTime">–</span>
+        </div>
+        <p class="morning-hint" id="sleepHint"></p>
+        <p class="sleep-now" id="sleepNowLine"></p>
+        <div class="morning-inputs">
+          <label class="morning-field">
+            <span>Schlafbedarf (Std:Min)</span>
+            <input type="text" inputmode="numeric" id="sleepNeedInput" class="morning-input"
+                   placeholder="7:00" aria-label="Schlafbedarf, z. B. 7:00" />
+            <span class="duration-echo" id="sleepNeedEcho"></span>
+          </label>
+        </div>
+      </details>
+
+      <!-- Termine (einfache Liste, z. B. Arzt um 14:30) -->
+      <details class="card appointment-card collapsible-card" data-card="appointments">
+        <summary>
+          <span><span class="card-label-icon">📌</span> Termine</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron"><path d="M9 18l6-6-6-6"></path></svg>
+        </summary>
+        <p class="appointment-next-gap is-hidden" id="appointmentNextGap"></p>
+        <div class="appointment-list" id="appointmentList"></div>
+        <p class="appointment-empty is-hidden" id="appointmentEmpty">Noch keine Termine eingetragen.</p>
+        <form class="appointment-form" id="appointmentForm">
+          <input type="time" id="appointmentTimeInput" class="appointment-time-input" aria-label="Uhrzeit" required />
+          <input type="text" id="appointmentLabelInput" class="appointment-label-input" placeholder="z. B. Arzt" aria-label="Notiz" required maxlength="40" />
+          <button type="submit" class="round-btn" aria-label="Termin hinzufügen">+</button>
+        </form>
+      </details>
+
+      <!-- Was wäre wenn? (reine Simulation, verändert keine gespeicherten Werte) -->
+      <details class="card wwenn-card">
+        <summary>
+          <span><span class="card-label-icon">🔮</span> Was wäre wenn?</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron"><path d="M9 18l6-6-6-6"></path></svg>
+        </summary>
+        <div class="wwenn-body">
+          <p class="wwenn-disclaimer">Nur Simulation – verändert keine gespeicherten Werte.</p>
+          <label class="wwenn-label" for="wwennStartSlider">Arbeitsbeginn: <strong id="wwennStartValue">07:00</strong></label>
+          <input type="range" id="wwennStartSlider" min="300" max="660" step="5" value="420" aria-label="Simulierter Arbeitsbeginn" />
+          <div class="wwenn-result">→ Feierabend: <strong id="wwennResult">14:42</strong></div>
+        </div>
+      </details>
+
+      <!-- § 4 ArbZG Details -->
+      <details class="card law-card">
+        <summary>
+          <span><span class="card-label-icon">ℹ</span> § 4 Arbeitszeitgesetz (ArbZG)</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron"><path d="M9 18l6-6-6-6"></path></svg>
+        </summary>
+        <div class="law-body">
+          <p><strong>Bis 6 Stunden</strong> Nettoarbeitszeit: keine gesetzliche Pause.</p>
+          <p><strong>Mehr als 6 bis 9 Stunden:</strong> 30 Minuten Pause.</p>
+          <p><strong>Mehr als 9 Stunden:</strong> 45 Minuten Pause.</p>
+          <p>Die 45 Minuten <strong>ersetzen</strong> die 30 Minuten und werden nicht addiert.</p>
+          <p class="law-disclaimer">Dies ist die gesetzliche Grundregel. Betriebliche oder tarifliche Sonderregelungen können abweichen.</p>
+        </div>
+      </details>
+
+      </div><!-- /zs-off -->
+    </main>
+
+    <!-- ============ TAB: MEIN TAG ============ -->
+    <section class="tab-panel is-hidden" id="panel-tag" data-panel="tag">
+      <section class="card myday-card">
+        <div class="myday-header">
+          <h2 class="card-label"><span class="card-label-icon">🕐</span> Mein Tag</h2>
+          <span class="myday-date" id="myDayDate">–</span>
+        </div>
+        <div class="stat-range" id="myDayToggle" role="group" aria-label="Tag wählen">
+          <button type="button" class="unit-btn is-active" data-day-offset="0">Heute</button>
+          <button type="button" class="unit-btn" data-day-offset="1">Morgen</button>
+        </div>
+        <p class="myday-now" id="myDayNow">–</p>
+        <div class="day-timeline" id="myDayTimeline"></div>
+        <details class="explain">
+          <summary>Woher kommen diese Zeiten?</summary>
+          <p>
+            Alles hier kommt aus den Rechnungen im Tab Planen – ändere dort etwas,
+            und der Zeitstrahl zieht mit. Hier wird nichts eigenständig gerechnet,
+            damit die Ansicht gar nicht erst von den Einzelkarten abweichen kann.
+            Die Pause steht nur als Hinweis am Arbeitsbeginn: wann du tatsächlich
+            Pause machst, weiß die App nicht.
+          </p>
+        </details>
+      </section>
+    </section>
+
+    <!-- ============ TAB: KALENDER ============ -->
+    <section class="tab-panel is-hidden" id="panel-kalender" data-panel="kalender">
+      <section class="card">
+        <h2 class="card-label"><span class="card-label-icon">🗓</span> Kalender</h2>
+
+        <div class="week-nav">
+          <button class="round-btn" id="calendarPrevBtn" type="button" aria-label="Vorheriger Monat">‹</button>
+          <div class="week-nav-label">
+            <span id="calendarMonthLabel">–</span>
+            <button class="chip-btn week-today-btn" id="calendarTodayBtn" type="button">Heute</button>
+          </div>
+          <button class="round-btn" id="calendarNextBtn" type="button" aria-label="Nächster Monat">›</button>
+        </div>
+
+        <div class="calendar-wrap" id="calendarGrid"></div>
+
+        <p class="calendar-selection" id="calendarSelection">Nichts ausgewählt – tippe den ersten Tag an.</p>
+        <div class="activity-chips calendar-types" id="calendarTypeChips"></div>
+        <button type="button" class="chip-btn settings-wide-btn" id="calendarClearBtn" disabled>Tagestyp entfernen</button>
+        <p class="activity-status is-hidden" id="calendarStatus" role="alert"></p>
+
+        <details class="explain">
+          <summary>Wie plane ich hier etwas ein?</summary>
+          <p>
+            Ersten Tag antippen, dann den letzten – der ganze Zeitraum ist markiert.
+            Für einen einzelnen Tag denselben Tag zweimal antippen. Danach unten den
+            Tagestyp wählen, er gilt dann für alle markierten Tage auf einmal.
+          </p>
+          <p>
+            Das 🎓 ohne Auswahl zeigt Tage, die laut deiner Berufsschul-Regel automatisch
+            Schultage sind. Setzt du dort von Hand etwas anderes, gilt deine Eingabe.
+          </p>
+        </details>
+      </section>
+    </section>
+
+    <!-- ============ TAB: VERLAUF ============ -->
+    <section class="tab-panel is-hidden" id="panel-verlauf" data-panel="verlauf">
+
+      <!-- Zeitkonto (laufender Saldo über alle erfassten Wochen) -->
+      <section class="card zeitkonto-card">
+        <div class="zeitkonto-header">
+          <h2 class="card-label"><span class="card-label-icon">⏳</span> Zeitkonto</h2>
+          <div class="zeitkonto-unit-toggle zs-off" hidden id="zeitkontoUnitToggle" role="tablist" aria-label="Anzeigeeinheit Zeitkonto">
+            <button type="button" class="unit-btn is-active" data-unit="both">Beide</button>
+            <button type="button" class="unit-btn" data-unit="normal">Normal</button>
+            <button type="button" class="unit-btn" data-unit="industrie">Industrie</button>
+          </div>
+        </div>
+        <div class="zeitkonto-grid">
+          <div class="zk-tile">
+            <span class="zk-label">Heute</span>
+            <span class="zk-value zk-industrial" id="zkTodayValue">±0,00 h</span>
+            <span class="zk-normal zk-normal-unit" id="zkTodayNormal">= ±0:00 Std.</span>
+            <span class="zk-note" id="zkTodayNote"></span>
+          </div>
+          <div class="zk-tile">
+            <span class="zk-label">Diese Woche</span>
+            <span class="zk-value zk-industrial" id="zkWeekValue">±0,00 h</span>
+            <span class="zk-normal zk-normal-unit" id="zkWeekNormal">= ±0:00 Std.</span>
+          </div>
+          <div class="zk-tile">
+            <span class="zk-label">Dieser Monat</span>
+            <span class="zk-value zk-industrial" id="zkMonthValue">±0,00 h</span>
+            <span class="zk-normal zk-normal-unit" id="zkMonthNormal">= ±0:00 Std.</span>
+          </div>
+          <div class="zk-tile zk-tile--total">
+            <span class="zk-label">Gesamt</span>
+            <span class="zk-value zk-industrial" id="zeitkontoValue">±0,00 h</span>
+            <span class="zk-normal zk-normal-unit" id="zeitkontoNormal">= ±0:00 Std.</span>
+          </div>
+        </div>
+        <p class="zeitkonto-carry" id="zeitkontoCarry"></p>
+
+        <!-- Wochenprognose (Version 3.0): was ist noch offen und wie verteilt es sich? -->
+        <div class="forecast-block">
+          <span class="forecast-label">Diese Woche noch</span>
+          <div class="forecast-grid">
+            <div class="forecast-tile">
+              <span class="forecast-tile-label">geschafft</span>
+              <span class="forecast-tile-value" id="forecastDone">–</span>
+            </div>
+            <div class="forecast-tile">
+              <span class="forecast-tile-label">offen</span>
+              <span class="forecast-tile-value" id="forecastOpen">–</span>
+            </div>
+            <div class="forecast-tile">
+              <span class="forecast-tile-label">je Tag</span>
+              <span class="forecast-tile-value" id="forecastPerDay">–</span>
+            </div>
+          </div>
+          <p class="forecast-hint" id="forecastHint"></p>
+        </div>
+
+        <details class="explain"><summary>Wie wird das Zeitkonto gerechnet?</summary><p class="zeitkonto-hint">Woche, Monat und Gesamt zählen nur <strong>abgeschlossene</strong> Tage – der laufende Tag fließt erst ein, wenn du „Gehen" gestempelt hast. Verglichen wird mit deinem Wochensoll (Einstellungen → Arbeitszeit); eine Kalenderwoche zählt zu dem Monat, in dem sie beginnt. „Heute" zeigt den laufenden Stand gegen deine geplante Nettoarbeitszeit.</p></details>
+      </section>
+
+      <!-- Wochenübersicht / Überstunden-Rechner -->
+      <section class="card">
+        <h2 class="card-label"><span class="card-label-icon">📅</span> Wochenübersicht</h2>
+
+        <div class="week-nav">
+          <button class="round-btn" id="weekPrevBtn" type="button" aria-label="Vorherige Woche">‹</button>
+          <div class="week-nav-label">
+            <span id="weekRangeLabel">–</span>
+            <button class="chip-btn week-today-btn" id="weekTodayBtn" type="button">Diese Woche</button>
+          </div>
+          <button class="round-btn" id="weekNextBtn" type="button" aria-label="Nächste Woche">›</button>
+        </div>
+
+        <details class="explain"><summary>Wie trage ich hier Zeiten ein?</summary><p class="week-day-hint">🕐 antippen, um einfach nur Kommen und Gehen einzutragen – die Pause rechnet die App selbst. Tagestyp-Symbol antippen für Urlaub, Krank, Berufsschule &amp; Co. (die zählen ohne Zeiteintrag) und für die Tagesdetails.</p></details>
+        <div class="week-days" id="weekDays"></div>
+
+        <dl class="breakdown-list">
+          <div class="breakdown-row"><dt>Wochensoll</dt><dd id="weekTarget">36,00 h</dd></div>
+          <div class="breakdown-row"><dt>Wochen-Ist</dt><dd id="weekSum">0,00 h</dd></div>
+          <div class="breakdown-row highlight"><dt>Differenz</dt><dd id="weekDiff">±0,00 h</dd></div>
+        </dl>
+      </section>
+
+      <!-- Monatsübersicht (Version 2.1) -->
+      <section class="card">
+        <h2 class="card-label"><span class="card-label-icon">🗓</span> Monatsübersicht</h2>
+
+        <div class="week-nav">
+          <button class="round-btn" id="monthPrevBtn" type="button" aria-label="Vorheriger Monat">‹</button>
+          <div class="week-nav-label">
+            <span id="monthRangeLabel">–</span>
+            <button class="chip-btn week-today-btn" id="monthTodayBtn" type="button">Dieser Monat</button>
+          </div>
+          <button class="round-btn" id="monthNextBtn" type="button" aria-label="Nächster Monat">›</button>
+        </div>
+
+        <div class="month-view-toggle" id="monthViewToggle" role="group" aria-label="Darstellung">
+          <button type="button" class="unit-btn is-active" data-view="list">Liste</button>
+          <button type="button" class="unit-btn" data-view="calendar">Kalender</button>
+        </div>
+
+        <div class="month-weeks" id="monthWeeks"></div>
+
+        <div class="month-calendar is-hidden" id="monthCalendar"></div>
+        <div class="month-legend is-hidden" id="monthLegend">
+          <span><i class="legend-dot is-positive"></i>Plus</span>
+          <span><i class="legend-dot is-negative"></i>Minus</span>
+          <span><i class="legend-dot is-zero"></i>ausgeglichen</span>
+          <span><i class="legend-dot is-type"></i>Urlaub &amp; Co.</span>
+          <span><i class="legend-dot is-open"></i>läuft noch</span>
+        </div>
+
+        <dl class="breakdown-list">
+          <div class="breakdown-row"><dt>Monatssoll</dt><dd id="monthTarget">0,00 h</dd></div>
+          <div class="breakdown-row"><dt>Monats-Ist</dt><dd id="monthSum">0,00 h</dd></div>
+          <div class="breakdown-row highlight"><dt>Differenz</dt><dd id="monthDiff">±0,00 h</dd></div>
+        </dl>
+        <p class="month-hint">Gezählt werden die Kalenderwochen, die in diesem Monat beginnen. Wochen ganz ohne Eintrag bleiben außen vor und erzeugen keine Minusstunden.</p>
+      </section>
+
+      <!-- Urlaubskonto (Version 3.0, Jahreswahl ab 3.1) -->
+      <section class="card">
+        <h2 class="card-label"><span class="card-label-icon">🏖</span> Urlaubskonto</h2>
+        <div class="week-nav">
+          <button class="round-btn" id="vacationPrevBtn" type="button" aria-label="Vorheriges Jahr">‹</button>
+          <div class="week-nav-label"><span id="vacationYearLabel">–</span></div>
+          <button class="round-btn" id="vacationNextBtn" type="button" aria-label="Nächstes Jahr">›</button>
+        </div>
+        <p class="activity-status is-hidden" id="vacationWarning" role="alert"></p>
+        <div class="vacation-grid">
+          <div class="zk-tile">
+            <span class="zk-label">Verbraucht</span>
+            <span class="zk-value" id="vacationUsed">0</span>
+            <span class="zk-note">Tage</span>
+          </div>
+          <div class="zk-tile zk-tile--total">
+            <span class="zk-label">Noch offen</span>
+            <span class="zk-value" id="vacationRemaining">–</span>
+            <span class="zk-note">Tage</span>
+          </div>
+        </div>
+        <p class="settings-hint" id="vacationHint"></p>
+      </section>
+
+      <div class="zs-off" hidden>
+      <section class="card">
+        <h2 class="card-label"><span class="card-label-icon">⭐</span> Arbeitsprofile</h2>
+        <div class="preset-list" id="presetList"></div>
+        <form class="preset-form" id="presetForm">
+          <input type="text" id="presetNameInput" class="preset-name-input" placeholder="Profilname, z. B. Spätschicht" aria-label="Profilname" required maxlength="24" />
+          <button type="submit" class="chip-btn">+ Aktuelles speichern</button>
+        </form>
+      </section>
+
+      <section class="card export-card">
+        <h2 class="card-label"><span class="card-label-icon">📤</span> Export</h2>
+        <p class="export-hint">Wochendaten als Tabelle exportieren oder die aktuelle Übersicht drucken/als PDF speichern.</p>
+        <div class="export-actions">
+          <button type="button" class="chip-btn" id="csvExportBtn">CSV exportieren</button>
+          <button type="button" class="chip-btn" id="pdfExportBtn">Drucken / als PDF</button>
+        </div>
+      </section>
+      </div><!-- /zs-off -->
+    </section>
+
+    <!-- ============ TAB: STATISTIK ============ -->
+    <section class="tab-panel is-hidden" id="panel-statistik" data-panel="statistik">
+      <section class="card">
+        <h2 class="card-label"><span class="card-label-icon">📈</span> Statistik</h2>
+        <div class="stat-range" id="statRangeToggle" role="group" aria-label="Zeitraum">
+          <button type="button" class="unit-btn is-active" data-range="month">Dieser Monat</button>
+          <button type="button" class="unit-btn" data-range="all">Gesamt</button>
+        </div>
+        <p class="stat-hint" id="statHint">Gezählt werden alle Tage mit erfassten Zeiten.</p>
+        <dl class="breakdown-list" id="statList"></dl>
+      </section>
+
+      <section class="card">
+        <h2 class="card-label"><span class="card-label-icon">🏷</span> Tage nach Typ</h2>
+        <div class="stat-types" id="statTypes"></div>
+      </section>
+    </section>
+
+    <!-- ============ TAB: INFOS ============ -->
+    <section class="tab-panel is-hidden" id="panel-infos" data-panel="infos">
+      <section class="card">
+        <button type="button" class="status-btn status-btn-primary zs-wide" id="zsOpenSettings">⚙ Einstellungen</button>
+        <p class="settings-hint">Arbeitszeit, Schule, Bus und Bahn, Urlaub, Design.</p>
+      </section>
+
+      <section class="card">
+        <h2 class="card-label"><span class="card-label-icon">💾</span> Backup</h2>
+        <button type="button" class="status-btn status-btn-primary zs-wide" id="zsShareBackup">Backup in Dateien sichern</button>
+        <p class="settings-hint" id="zsBackupHint"></p>
+        <details class="explain"><summary>So bleibt es nur auf dem iPhone</summary><p>Im Teilen-Menü „In Dateien sichern" wählen, dann <strong>„Auf meinem iPhone"</strong> (nicht iCloud Drive). Die Datei liegt dann nur auf dem Handy und bleibt, auch wenn die App gelöscht wird.</p></details>
+        <button type="button" class="chip-btn settings-wide-btn" id="zsRestoreFile">↩ Backup-Datei laden</button>
+        <p class="backup-status is-hidden" id="zsBackupStatus"></p>
+      </section>
+
+      <section class="card">
+        <h2 class="card-label"><span class="card-label-icon">🛟</span> Sicherungen auf diesem iPhone</h2>
+        <p class="settings-hint">Entstehen automatisch: täglich, vor jedem Update und vor jedem Wiederherstellen. Antippen holt den alten Stand zurück.</p>
+        <div id="zsSnapList"></div>
+        <details class="explain"><summary>Wann reichen die nicht?</summary><p>Wird das App-Symbol gelöscht, sind auch diese Sicherungen weg. Dafür ist „Backup in Dateien sichern" da.</p></details>
+      </section>
+
+      <section class="card">
+        <h2 class="card-label"><span class="card-label-icon">📱</span> Wichtig auf dem iPhone</h2>
+        <details class="explain"><summary>Nur über das Icon öffnen</summary><p>Öffne Zeitstempel immer über das Symbol auf dem Home-Bildschirm, nie in einem Safari-Tab. Safari und das Symbol haben getrennte Speicher – sonst entstehen zwei verschiedene Datenstände.</p></details>
+        <details class="explain"><summary>Symbol löschen = Daten weg</summary><p>Wird das Symbol gelöscht oder unter Einstellungen → Apps → Safari die Websitedaten entfernt, sind alle Zeiten weg. Vorher immer ein Backup teilen.</p></details>
+        <details class="explain"><summary>Keine Erinnerungen im Hintergrund</summary><p>Die App kann dir nichts schicken, solange sie geschlossen ist. Wenn du ein Gehen vergessen hast, zeigt sie es dir beim nächsten Öffnen.</p></details>
+        <details class="explain"><summary>Updates</summary><p>Neue Versionen holt sich die App beim Öffnen mit Internet. Oben erscheint dann „Neue Version – tippen zum Aktualisieren". Deine Daten bleiben erhalten.</p></details>
+      </section>
+
+      <section class="card">
+        <h2 class="card-label"><span class="card-label-icon">🧮</span> So rechnet die App</h2>
+        <details class="explain"><summary>Feierabend</summary><p>Feierabend = Kommen + 8:00 Arbeit + 30 Min. Pause. Wegen Gleitzeit zählt immer dein echtes Kommen – kommt der Bus später, verschiebt sich nur der Feierabend.</p></details>
+        <details class="explain"><summary>Pause</summary><p>Stempelst du keine oder eine zu kurze Pause, zieht die App trotzdem die Pflichtpause ab (über 6 Std. 30 Min., über 9 Std. 45 Min., § 4 ArbZG). Längere gestempelte Pausen werden voll abgezogen. In jedem Tag steht, ob die Pause gestempelt oder automatisch war.</p></details>
+        <details class="explain"><summary>Dienstag (Schule)</summary><p>Ein Schultag mit mehr als fünf Schulstunden zählt einmal pro Woche als voller Arbeitstag (§ 15 BBiG) – bei dir der Dienstag mit 8:00, ohne Stempeln.</p></details>
+        <details class="explain"><summary>Mittwoch (Schule, dann Betrieb)</summary><p>Es zählen Unterricht samt Pausen, der Weg von der Schule in den Betrieb und deine Zeit im Betrieb (§ 15 Abs. 2 BBiG). Mit 7:55–13:10, 45 Min. Weg und Gehen um 16:30 sind das 8:35. Ob dein Betrieb das genauso zählt, kannst du beim Ausbilder klären – in den Einstellungen lässt sich der Mittwoch auch pauschal mit 8:00 zählen. Keine Rechtsberatung.</p></details>
+        <details class="explain"><summary>Ferien</summary><p>In den hessischen Schulferien sind Dienstag und Mittwoch normale Betriebstage.</p></details>
+        <details class="explain"><summary>Mehr als 10 Stunden?</summary><p>Mehr als 10 Stunden Arbeit am Tag erlaubt das Arbeitszeitgesetz nicht (§ 3 ArbZG). Die App weist darauf hin, wenn ein Tag darüber liegt.</p></details>
+      </section>
+
+      <section class="card zs-off" hidden id="zsIndustrieInfo">
+        <h2 class="card-label"><span class="card-label-icon">⏱</span> Was sind Industriestunden?</h2>
+        <p>Industriestunden sind Stunden als Dezimalzahl: 8,25 heißt 8 Stunden und ein Viertel, also 8:15 – nicht 8 Stunden 25 Minuten.</p>
+      </section>
+
+      <section class="card">
+        <h2 class="card-label"><span class="card-label-icon">🔒</span> Daten</h2>
+        <p class="settings-hint">Alles bleibt auf diesem iPhone. Kein Konto, kein Server, keine Übertragung.</p>
+        <p class="settings-hint" id="zsVersion">Zeitstempel 1.0 · auf Basis von Feierabend-Rechner 3.1</p>
+      </section>
+    </section>
+
+  </div>
+
+  <!-- ============ BOTTOM NAV ============ -->
+  <nav class="bottom-nav" aria-label="Hauptnavigation">
+    <button class="nav-btn is-active" data-target="planen">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+      <span>Heute</span>
+    </button>
+    <button class="nav-btn" data-target="kalender">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+      <span>Kalender</span>
+    </button>
+    <button class="nav-btn" data-target="verlauf">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M7 15l4-4 3 3 5-6"></path></svg>
+      <span>Konto</span>
+    </button>
+    <button class="nav-btn" data-target="infos">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle></svg>
+      <span>Mehr</span>
+    </button>
+  </nav>
+
+  <!-- ============ SETTINGS DIALOG ============ -->
+  <dialog id="settingsDialog" class="settings-dialog">
+    <form method="dialog" class="settings-form">
+      <div class="settings-header">
+        <h2>Einstellungen</h2>
+        <button type="submit" class="icon-btn" aria-label="Schließen">✕</button>
+      </div>
+
+      <div class="settings-section">
+        <h3>Arbeitszeit</h3>
+        <label class="settings-field-label" for="defaultIndustrialInput">Standard-Nettoarbeitszeit</label>
+        <div class="settings-row">
+          <input type="text" autocomplete="off" id="defaultIndustrialInput" class="settings-input" value="8:00" />
+          <span class="settings-unit">Std:Min am Tag</span>
+        </div>
+
+        <label class="settings-field-label" for="weeklyTargetInput">Wochensoll (Zeitkonto)</label>
+        <div class="settings-row">
+          <input type="text" autocomplete="off" id="weeklyTargetInput" class="settings-input" value="40:00" />
+          <span class="settings-unit">Std:Min pro Woche</span>
+        </div>
+
+        <label class="settings-field-label" for="breakRuleSelect">Pausenregel</label>
+        <div class="settings-row">
+          <select id="breakRuleSelect" class="settings-input settings-select"></select>
+        </div>
+
+        <details class="rule-builder">
+          <summary>Eigene Pausenregel anlegen</summary>
+          <p class="settings-hint">Zum Beispiel nach Betriebsvereinbarung: „ab 5 Std. 20 Minuten, ab 8 Std. 45 Minuten". Gerechnet wird immer die höchste Stufe, die deine Nettoarbeitszeit erreicht. Nicht benötigte Stufen einfach leer lassen.</p>
+          <div class="settings-row">
+            <input type="text" id="ruleNameInput" class="settings-input" maxlength="28" placeholder="Name der Regel" aria-label="Name der Regel" />
+          </div>
+          <div class="rule-step-row">
+            <span>ab</span>
+            <input type="text" inputmode="decimal" class="rule-step-from" id="ruleFrom1" placeholder="6" aria-label="Stufe 1 ab Stunden" />
+            <span>Std. →</span>
+            <input type="text" inputmode="numeric" class="rule-step-pause" id="rulePause1" placeholder="30" aria-label="Stufe 1 Pause in Minuten" />
+            <span>Min.</span>
+          </div>
+          <div class="rule-step-row">
+            <span>ab</span>
+            <input type="text" inputmode="decimal" class="rule-step-from" id="ruleFrom2" placeholder="9" aria-label="Stufe 2 ab Stunden" />
+            <span>Std. →</span>
+            <input type="text" inputmode="numeric" class="rule-step-pause" id="rulePause2" placeholder="45" aria-label="Stufe 2 Pause in Minuten" />
+            <span>Min.</span>
+          </div>
+          <div class="rule-step-row">
+            <span>ab</span>
+            <input type="text" inputmode="decimal" class="rule-step-from" id="ruleFrom3" placeholder="" aria-label="Stufe 3 ab Stunden" />
+            <span>Std. →</span>
+            <input type="text" inputmode="numeric" class="rule-step-pause" id="rulePause3" placeholder="" aria-label="Stufe 3 Pause in Minuten" />
+            <span>Min.</span>
+          </div>
+          <button type="button" class="chip-btn settings-wide-btn" id="ruleSaveBtn">Regel speichern und verwenden</button>
+          <p class="rule-status is-hidden" id="ruleStatus" role="alert"></p>
+          <div class="rule-list" id="ruleList"></div>
+        </details>
+
+        <span class="settings-field-label">Arbeitstage (bestimmen das Tagessoll)</span>
+        <div class="workday-picker" id="workdayPicker" role="group" aria-label="Arbeitstage"></div>
+        <p class="settings-hint" id="workdayHint"></p>
+
+        <span class="settings-field-label">Urlaubsanspruch (Grundwert)</span>
+        <div class="settings-row">
+          <input type="text" inputmode="numeric" id="vacationPerYearInput" class="settings-input"
+                 placeholder="30" aria-label="Urlaubstage pro Jahr" />
+          <span class="settings-unit">Tage</span>
+        </div>
+
+        <span class="settings-field-label">Abweichend für <span id="vacationYearSettingLabel">–</span></span>
+        <div class="school-block-row">
+          <label class="activity-field">
+            <span>Anspruch</span>
+            <input type="text" inputmode="numeric" id="vacationDaysInput" class="activity-input"
+                   aria-label="Urlaubsanspruch dieses Jahres" />
+          </label>
+          <label class="activity-field">
+            <span>Übertrag aus Vorjahr</span>
+            <input type="text" inputmode="numeric" id="vacationCarryInput" class="activity-input"
+                   placeholder="0" aria-label="Resturlaub aus dem Vorjahr" />
+          </label>
+        </div>
+        <button type="button" class="chip-btn settings-wide-btn" id="vacationYearSaveBtn">Urlaubsjahr speichern</button>
+        <p class="settings-hint">Wer mitten im Jahr anfängt, hat anteilig weniger – das kann die App nicht ausrechnen, weil sie dein Eintrittsdatum nicht kennt. Das Jahr wählst du im Urlaubskonto (Tab Konto). Beide Felder leer lassen = Grundwert gilt.</p>
+
+        <span class="settings-field-label">Berufsschule: Regeln</span>
+        <div class="activity-list" id="schoolRuleList"></div>
+        <p class="activity-empty" id="schoolRuleEmpty">Noch keine Regel angelegt.</p>
+        <p class="settings-hint" id="schoolHint"></p>
+
+        <details class="rule-builder" id="schoolRuleBuilder">
+          <summary>Regel hinzufügen</summary>
+
+          <label class="activity-field">
+            <span>Art</span>
+            <select id="schoolRuleKind" class="activity-input settings-select" aria-label="Art der Regel">
+              <option value="weekly">Wiederkehrende Wochentage</option>
+              <option value="block">Blockunterricht (Zeitraum)</option>
+            </select>
+          </label>
+
+          <label class="activity-field">
+            <span>Name (optional)</span>
+            <input type="text" id="schoolRuleLabel" class="activity-input"
+                   placeholder="z. B. 1. Lehrjahr" maxlength="30" aria-label="Name der Regel" />
+          </label>
+
+          <div id="schoolWeeklyFields">
+            <span class="settings-field-label">Wochentage</span>
+            <div class="workday-picker" id="schoolWeekdayPicker" role="group" aria-label="Berufsschultage"></div>
+
+            <label class="activity-field">
+              <span>Rhythmus</span>
+              <select id="schoolRuleInterval" class="activity-input settings-select" aria-label="Rhythmus">
+                <option value="1">jede Woche</option>
+                <option value="2">jede 2. Woche</option>
+                <option value="3">jede 3. Woche</option>
+                <option value="4">jede 4. Woche</option>
+              </select>
+            </label>
+
+            <label class="activity-field is-hidden" id="schoolAnchorField">
+              <span>Starttermin (ein Tag, an dem Schule war)</span>
+              <input type="date" id="schoolRuleAnchor" class="activity-input" aria-label="Starttermin des Rhythmus" />
+            </label>
+
+            <div class="school-block-row">
+              <label class="activity-field">
+                <span>gültig ab (optional)</span>
+                <input type="date" id="schoolRuleFrom" class="activity-input" aria-label="Regel gültig ab" />
+              </label>
+              <label class="activity-field">
+                <span>gültig bis (optional)</span>
+                <input type="date" id="schoolRuleTo" class="activity-input" aria-label="Regel gültig bis" />
+              </label>
+            </div>
+          </div>
+
+          <div id="schoolBlockFields" class="is-hidden">
+            <div class="school-block-row">
+              <label class="activity-field">
+                <span>von</span>
+                <input type="date" id="schoolBlockFrom" class="activity-input" aria-label="Block von" />
+              </label>
+              <label class="activity-field">
+                <span>bis</span>
+                <input type="date" id="schoolBlockTo" class="activity-input" aria-label="Block bis" />
+              </label>
+            </div>
+          </div>
+
+          <button type="button" class="chip-btn settings-wide-btn" id="schoolRuleAddBtn">Regel speichern</button>
+          <p class="settings-hint">Mit „gültig ab/bis" grenzt du eine Regel aufs Lehrjahr ein. So bleibt die alte Regel für die Vergangenheit erhalten, statt sie löschen zu müssen.</p>
+        </details>
+
+        <span class="settings-field-label">Ferien (da fällt Berufsschule aus)</span>
+        <div class="settings-row">
+          <select id="schoolStateSelect" class="settings-input settings-select" aria-label="Bundesland">
+            <option value="">Kein Bundesland</option>
+            <option value="he">Hessen</option>
+          </select>
+        </div>
+        <p class="settings-hint" id="schoolStateHint"></p>
+        <div class="activity-list" id="schoolBreakList"></div>
+
+        <details class="rule-builder" id="schoolBreakBuilder">
+          <summary>Eigenen Ferienzeitraum eintragen</summary>
+          <label class="activity-field">
+            <span>Name (optional)</span>
+            <input type="text" id="schoolBreakLabel" class="activity-input"
+                   placeholder="z. B. Betriebsferien" maxlength="30" aria-label="Name des Zeitraums" />
+          </label>
+          <div class="school-block-row">
+            <label class="activity-field">
+              <span>von</span>
+              <input type="date" id="schoolBreakFrom" class="activity-input" aria-label="Ferien von" />
+            </label>
+            <label class="activity-field">
+              <span>bis</span>
+              <input type="date" id="schoolBreakTo" class="activity-input" aria-label="Ferien bis" />
+            </label>
+          </div>
+          <button type="button" class="chip-btn settings-wide-btn" id="schoolBreakAddBtn">Ferien speichern</button>
+        </details>
+        <p class="activity-status is-hidden" id="schoolStatus" role="alert"></p>
+
+        <span class="settings-field-label zs-off" hidden>Anzeigeeinheit im Zeitkonto</span>
+        <div class="settings-unit-toggle zs-off" hidden id="settingsUnitToggle" role="group" aria-label="Anzeigeeinheit">
+          <button type="button" class="unit-btn" data-unit="both">Beide</button>
+          <button type="button" class="unit-btn" data-unit="normal">Normal</button>
+          <button type="button" class="unit-btn" data-unit="industrie">Industrie</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Pause</h3>
+        <label class="settings-toggle">
+          <input type="checkbox" id="zsAutoBreak" />
+          <span>Pflichtpause automatisch abziehen, wenn keine oder zu wenig gestempelt ist</span>
+        </label>
+      </div>
+
+      <div class="settings-section">
+        <h3>Mittwoch: Schule, danach Betrieb</h3>
+        <div class="settings-row zs-three">
+          <label class="zs-mini"><span>Schule ab</span><input type="time" id="zsMiFrom" class="settings-input" /></label>
+          <label class="zs-mini"><span>bis</span><input type="time" id="zsMiTo" class="settings-input" /></label>
+          <label class="zs-mini"><span>Weg (Min.)</span><input type="text" inputmode="numeric" id="zsMiTravel" class="settings-input" /></label>
+        </div>
+        <label class="settings-field-label" for="zsMixedMode">So zählt der Mittwoch</label>
+        <div class="settings-row">
+          <select id="zsMixedMode" class="settings-input settings-select">
+            <option value="sum">Schule + Weg + Betrieb (§ 15 BBiG)</option>
+            <option value="flat">pauschal wie ein Arbeitstag</option>
+          </select>
+        </div>
+        <label class="settings-toggle">
+          <input type="checkbox" id="zsMixedBreak" />
+          <span>Im Betrieb zusätzlich Pause abziehen</span>
+        </label>
+        <details class="explain"><summary>Was stimmt?</summary><p>Laut § 15 BBiG zählen Unterricht samt Pausen und der nötige Weg in den Betrieb als Ausbildungszeit. Ob dein Betrieb am Mittwoch noch eine Pause abzieht oder den Tag pauschal zählt, weißt du noch nicht – frag am besten deinen Ausbilder und stell es dann hier ein.</p></details>
+      </div>
+
+      <div class="settings-section">
+        <h3>Bus und Bahn</h3>
+        <p class="settings-hint">Abfahrt-Ankunft, mehrere mit Komma: <em>07:09-07:43, 07:39-08:13</em></p>
+        <label class="settings-field-label" for="zsToWork">Hin zum Betrieb</label>
+        <input type="text" autocomplete="off" id="zsToWork" class="settings-input zs-wide" />
+        <label class="settings-field-label" for="zsFromWork">Zurück vom Betrieb</label>
+        <input type="text" autocomplete="off" id="zsFromWork" class="settings-input zs-wide" placeholder="z. B. 16:22-16:56, 16:47-17:21" />
+        <label class="settings-field-label" for="zsToSchool">Hin zur Schule</label>
+        <input type="text" autocomplete="off" id="zsToSchool" class="settings-input zs-wide" placeholder="noch nicht eingetragen" />
+        <div class="settings-row zs-three">
+          <label class="zs-mini"><span>Fußweg zuhause ↔ Haltestelle</span><input type="text" inputmode="numeric" id="zsWalkHome" class="settings-input" /></label>
+          <label class="zs-mini"><span>Haltestelle ↔ Betrieb</span><input type="text" inputmode="numeric" id="zsWalkWork" class="settings-input" /></label>
+        </div>
+        <p class="settings-hint" id="zsTransitStatus"></p>
+      </div>
+
+      <div class="settings-section">
+        <h3>Tagestypen</h3>
+        <p class="settings-hint">Wie viel soll ein Tag zählen, an dem du nicht normal gearbeitet hast? Leer lassen heißt: Es zählt deine Standard-Nettoarbeitszeit – für Berufsschule, Urlaub, Krank und Feiertag ist das der Normalfall, du musst dort nichts eintragen. Nur wenn ein Typ abweichend zählen soll, trägst du hier einen eigenen Wert ein.</p>
+        <div class="daytype-settings" id="dayTypeSettings"></div>
+      </div>
+
+      <div class="settings-section zs-off" hidden>
+        <h3>Arbeitsweg</h3>
+        <div class="settings-row">
+          <input type="text" inputmode="numeric" id="commuteToWorkInput" class="settings-input" placeholder="0" />
+          <span class="settings-unit">Min. Hinweg</span>
+        </div>
+        <div class="settings-row">
+          <input type="text" inputmode="numeric" id="commuteFromWorkInput" class="settings-input" placeholder="0" />
+          <span class="settings-unit">Min. Rückweg</span>
+        </div>
+        <div class="settings-row">
+          <input type="text" inputmode="numeric" id="bufferInput" class="settings-input" placeholder="0" />
+          <span class="settings-unit">Min. Pufferzeit</span>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Darstellung</h3>
+        <label class="settings-field-label" for="zsDisplayUnit">Zeitanzeige</label>
+        <div class="settings-row">
+          <select id="zsDisplayUnit" class="settings-input settings-select">
+            <option value="hm">Stunden:Minuten (8:15)</option>
+            <option value="industrie">Industriestunden (8,25)</option>
+          </select>
+        </div>
+        <div class="theme-picker" id="themePicker">
+          <label class="theme-option">
+            <input type="radio" name="theme" value="rose" />
+            <span class="theme-swatch theme-swatch--rose"></span>
+            <span>Rosé</span>
+          </label>
+          <label class="theme-option">
+            <input type="radio" name="theme" value="design1" />
+            <span class="theme-swatch theme-swatch--1"></span>
+            <span>Revolut Style</span>
+          </label>
+          <label class="theme-option">
+            <input type="radio" name="theme" value="design2" />
+            <span class="theme-swatch theme-swatch--2"></span>
+            <span>Liquid Glass</span>
+          </label>
+          <label class="theme-option">
+            <input type="radio" name="theme" value="design3" />
+            <span class="theme-swatch theme-swatch--3"></span>
+            <span>Custom</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="settings-section zs-off" hidden>
+        <h3>Erinnerungen</h3>
+        <label class="settings-toggle">
+          <input type="checkbox" id="notificationsToggle" />
+          <span>Erinnerungen aktivieren</span>
+        </label>
+
+        <label class="settings-field-label" for="notifyLeadSelect">Vorwarnung vor Erreichen der Sollzeit</label>
+        <div class="settings-row">
+          <select id="notifyLeadSelect" class="settings-input settings-select">
+            <option value="0">keine Vorwarnung</option>
+            <option value="5">5 Minuten vorher</option>
+            <option value="10">10 Minuten vorher</option>
+            <option value="15">15 Minuten vorher</option>
+            <option value="30">30 Minuten vorher</option>
+          </select>
+        </div>
+
+        <label class="settings-toggle">
+          <input type="checkbox" id="notifyBreakToggle" />
+          <span>Auch an die Pause erinnern</span>
+        </label>
+
+        <p class="settings-hint" id="notifySupportHint"></p>
+      </div>
+
+      <div class="settings-section">
+        <h3>Daten</h3>
+        <p class="settings-hint">Alle Daten liegen ausschließlich lokal auf diesem Gerät. Ein Backup enthält Einstellungen, Arbeitsprofile, alle Arbeitstage samt Stempelzeiten und den Änderungsverlauf.</p>
+
+        <button type="button" class="chip-btn settings-wide-btn" id="backupExportBtn">💾 Backup erstellen</button>
+        <button type="button" class="chip-btn settings-wide-btn" id="backupImportBtn">↩ Backup wiederherstellen</button>
+        <button type="button" class="chip-btn settings-wide-btn zs-off" hidden id="settingsCsvBtn">📄 Zeiten als CSV exportieren</button>
+        <button type="button" class="chip-btn settings-wide-btn" id="zsShareBackup2">📤 Backup teilen</button>
+        <input type="file" id="backupFileInput" accept="application/json,.json" class="is-hidden" />
+
+        <details class="backup-text-block" id="backupTextBlock">
+          <summary>Backup als Text (falls der Download nicht klappt)</summary>
+          <p class="settings-hint">Downloads aus Home-Bildschirm-Apps klappen auf dem iPhone nicht immer. Dann den Text hier kopieren und z. B. in eine Notiz oder an dich selbst schicken – zum Wiederherstellen einfach wieder hier einfügen.</p>
+          <textarea id="backupTextarea" class="backup-textarea" rows="6" spellcheck="false" placeholder="Hier erscheint dein Backup – oder füge ein vorhandenes Backup ein."></textarea>
+          <div class="backup-text-actions">
+            <button type="button" class="chip-btn" id="backupCopyBtn">Kopieren</button>
+            <button type="button" class="chip-btn" id="backupTextImportBtn">Aus Textfeld wiederherstellen</button>
+          </div>
+          <p class="backup-status is-hidden" id="backupStatus"></p>
+        </details>
+      </div>
+
+      <div class="settings-section settings-danger">
+        <h3>Gefahrenzone</h3>
+        <p class="settings-hint">Löscht unwiderruflich alle erfassten Zeiten, Profile und Einstellungen auf diesem Gerät.</p>
+        <button type="button" class="danger-btn" id="resetDataBtn">Alle Daten zurücksetzen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ============ TAGES-DETAIL DIALOG (Verlauf: einzelner Tag) ============ -->
+  <dialog id="dayDetailDialog" class="settings-dialog day-detail-dialog">
+    <form method="dialog" class="settings-form">
+      <div class="settings-header">
+        <h2 id="dayDetailTitle">Tag</h2>
+        <button type="submit" class="icon-btn" aria-label="Schließen">✕</button>
+      </div>
+
+      <h3 class="day-detail-heading">Tagestyp</h3>
+      <div class="day-detail-types" id="dayDetailTypes"></div>
+      <p class="day-detail-type-hint is-hidden" id="dayDetailTypeHint"></p>
+
+      <dl class="breakdown-list day-detail-summary" id="dayDetailSummary"></dl>
+
+      <!-- ZEITSTEMPEL: Nachtragen in einem Schritt (Pause rechnet die App) -->
+      <div class="zs-quickfill is-hidden" id="zsQuickFill">
+        <h3 class="day-detail-heading">Nachtragen</h3>
+        <div class="settings-row zs-three">
+          <label class="zs-mini" id="zsQfInWrap"><span>Kommen</span><input type="time" id="zsQfIn" class="settings-input" /></label>
+          <label class="zs-mini"><span>Gehen</span><input type="time" id="zsQfOut" class="settings-input" /></label>
+        </div>
+        <button type="button" class="status-btn status-btn-primary zs-wide" id="zsQfSave">Speichern</button>
+        <p class="settings-hint">Pause nicht eingetragen? Die App zieht die Pflichtpause automatisch ab.</p>
+      </div>
+
+      <h3 class="day-detail-heading">Erfasste Zeiten</h3>
+      <div class="day-detail-events" id="dayDetailEvents"></div>
+      <p class="day-detail-error is-hidden" id="dayDetailError" role="alert"></p>
+
+      <button type="button" class="chip-btn day-detail-add-btn" id="dayDetailAddBtn">+ Eintrag hinzufügen</button>
+
+      <details class="day-detail-history is-hidden" id="dayDetailHistory">
+        <summary>Änderungsverlauf</summary>
+        <div class="day-detail-history-list" id="dayDetailHistoryList"></div>
+      </details>
+    </form>
+  </dialog>
+
+  <script src="js/calculator.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/overtime.js"></script>
+  <script src="js/punchclock.js"></script>
+  <script src="js/ferien.js"></script>
+  <script src="js/transit.js"></script>
+  <script src="js/pwa.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
