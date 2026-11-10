@@ -250,6 +250,18 @@
       breakTooShort = actualBreakMinutes > 0 && autoBreakMinutes > 0;
     }
 
+    // ZEITSTEMPEL: bezahlte Pause (z. B. freitags "die halbe Stunde wird
+    // geschenkt"). Die Pause wird weiterhin genommen und gilt als Pause im
+    // Sinne von § 4 ArbZG, zählt aber bis opts.paidBreakMinutes als
+    // Arbeitszeit. Längere Pausen werden nur um den Überhang gekürzt.
+    const paidBreak = Math.max(0, o.paidBreakMinutes || 0);
+    let paidBreakCreditMinutes = 0;
+    if (paidBreak && clockInEvent) {
+      paidBreakCreditMinutes = Math.min(paidBreak, deductedBreakMinutes);
+      netMinutes += paidBreakCreditMinutes;
+      deductedBreakMinutes -= paidBreakCreditMinutes;
+    }
+
     const requiredBreakMinutes = breakRuleFn ? breakRuleFn(targetNetMinutes) : 0;
     const remainingBreakMinutes = Math.max(0, requiredBreakMinutes - actualBreakMinutes);
     const remainingNetMinutes = Math.max(0, targetNetMinutes - netMinutes);
@@ -260,7 +272,7 @@
     // nicht vollständig genommene zieht ihn nicht künstlich vor (Abschnitt 6).
     let projectedFeierabendMinutes = null;
     if (clockInEvent) {
-      const effectivePause = Math.max(requiredBreakMinutes, actualBreakMinutes);
+      const effectivePause = Math.max(0, Math.max(requiredBreakMinutes, actualBreakMinutes) - paidBreak);
       projectedFeierabendMinutes = minutesOfDay(clockInEvent.timestamp) + targetNetMinutes + effectivePause;
     }
 
@@ -282,6 +294,7 @@
       deductedBreakMinutes: deductedBreakMinutes,
       autoBreakMinutes: autoBreakMinutes,
       breakTooShort: breakTooShort,
+      paidBreakCreditMinutes: paidBreakCreditMinutes,
       // Tagessaldo = Netto bisher minus Soll. Negativ solange das Soll noch
       // nicht erreicht ist, 0 bei genau erreichtem Soll, positiv bei Überstunden
       // - live und ohne Sonderfälle über den ganzen Tag hinweg konsistent.

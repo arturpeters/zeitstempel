@@ -115,7 +115,7 @@ const week = bootApp({ workDays: {
   '2026-11-16': day('2026-11-16', [['clockIn', '07:45'], ['clockOut', '16:15']]),
   '2026-11-18': day('2026-11-18', [['clockIn', '13:55'], ['clockOut', '16:30']]),
   '2026-11-19': day('2026-11-19', [['clockIn', '07:45'], ['breakStart', '12:00'], ['breakEnd', '12:20'], ['clockOut', '16:15']]),
-  '2026-11-20': day('2026-11-20', [['clockIn', '07:45'], ['clockOut', '16:15']]),
+  '2026-11-20': day('2026-11-20', [['clockIn', '07:45'], ['clockOut', '15:45']]),
 } });
 const wa = week.api;
 const hm = (m) => C.minutesToHHMM(m);
@@ -159,6 +159,22 @@ check('… und zählt 8:00 (nicht doppelt)', early.api.dayValueFor('2026-11-18')
 const brk = bootApp({ mixedBreakInBetrieb: true, workDays: {
   '2026-11-18': day('2026-11-18', [['clockIn', '13:55'], ['clockOut', '16:30']]) } });
 check('Mi mit „Pause im Betrieb abziehen" = 8:05', brk.api.dayValueFor('2026-11-18'), '8:05');
+
+section('Freitag: Pause bezahlt (Angabe 10.11.2026)');
+const fr = bootApp({ workDays: {
+  '2026-11-13': day('2026-11-13', [['clockIn', '08:00'], ['clockOut', '16:00']]),
+  '2026-11-06': day('2026-11-06', [['clockIn', '08:00'], ['breakStart', '12:00'], ['breakEnd', '12:45'], ['clockOut', '16:00']]),
+  '2026-11-20': day('2026-11-20', [['clockIn', '07:45']]) } }, '2026-11-20T10:00:00');
+check('Fr 8:00–16:00 ohne Stempel: 7,5 Std. gearbeitet, zählt 8:00', fr.api.dayValueFor('2026-11-13'), '8:00');
+check('Fr Saldo ±0', fr.api.dayBalance('2026-11-13').diff, 0);
+check('Fr 45 Min. Pause: nur der Überhang (15) wird abgezogen -> 7:45', fr.api.dayValueFor('2026-11-06'), '7:45');
+check('Fr Kommen 7:45 -> Feierabend 15:45 (Gleitzeit)', fr.t('zsTodayTime'), '15:45');
+check('Fr Hinweis „Pause bezahlt"', /bezahlt/.test(fr.t('statusPauseHint')), true);
+check('Do bleibt unverändert: Kommen 7:45 -> 16:15', C.minutesToClock(bootApp({ workDays: {
+  '2026-11-19': day('2026-11-19', [['clockIn', '07:45']]) } }, '2026-11-19T10:00:00').api.dayStatsFor('2026-11-19').projectedFeierabendMinutes), '16:15');
+const frOff = bootApp({ paidBreakDays: {}, workDays: {
+  '2026-11-13': day('2026-11-13', [['clockIn', '08:00'], ['clockOut', '16:00']]) } });
+check('Einstellung aus: Fr 8:00–16:00 zählt 7:30', frOff.api.dayValueFor('2026-11-13'), '7:30');
 
 section('Startseite und Tagesplan');
 const TR = { walkHomeMinutes: '5', walkWorkMinutes: '7', toWork: [{ dep: '07:09', arr: '07:43' }],
@@ -248,6 +264,6 @@ check('keine Inline-Styles/-Skripte im HTML (sonst blockiert die CSP)',
 
 // ===========================================================================
 section('Ende');
-check('keine Laufzeitfehler', [].concat(empty.errors, week.errors, live.errors, flat.errors, early.errors, brk.errors, mo.errors, plan.errors, mi.errors, fix.errors, ind.errors), []);
+check('keine Laufzeitfehler', [].concat(fr.errors, frOff.errors, empty.errors, week.errors, live.errors, flat.errors, early.errors, brk.errors, mo.errors, plan.errors, mi.errors, fix.errors, ind.errors), []);
 console.log('\n' + (failed ? 'FEHLER: ' + failed + ' fehlgeschlagen, ' : 'ALLES GRÜN: ') + passed + ' ok, ' + failed + ' Fehler');
 process.exitCode = failed ? 1 : 0;

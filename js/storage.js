@@ -173,6 +173,11 @@
     // Mischtag "Schule + Betrieb": 'sum' = Schule + Weg + Betrieb (§ 15 BBiG),
     // 'flat' = Tag zählt pauschal wie ein voller Arbeitstag.
     mixedDayMode: 'sum',
+    // Bezahlte Pause: an diesen Wochentagen zählt die Pause (bis zu
+    // paidBreakMinutes) als Arbeitszeit. Bei ihr freitags 30 Min.
+    // ("die halbe Stunde wird geschenkt", Angabe von Artur 10.11.2026).
+    paidBreakDays: { fr: true },
+    paidBreakMinutes: '30',
     // Pflichtpause auch im Betrieb abziehen, wenn am Mischtag keine gestempelt
     // ist? Standard nein: die Schulpausen zählen bereits als Pause.
     mixedBreakInBetrieb: false,

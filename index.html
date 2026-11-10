@@ -716,7 +716,7 @@
 
       <section class="card">
         <h2 class="card-label"><span class="card-label-icon">🧮</span> So rechnet die App</h2>
-        <details class="explain"><summary>Feierabend</summary><p>Feierabend = Kommen + 8:00 Arbeit + 30 Min. Pause. Wegen Gleitzeit zählt immer dein echtes Kommen – kommt der Bus später, verschiebt sich nur der Feierabend.</p></details>
+        <details class="explain"><summary>Feierabend</summary><p>Feierabend = Kommen + 8:00 Arbeit + 30 Min. Pause. Freitags ist die Pause bezahlt – dann ist schon nach 8:00 Feierabend. Wegen Gleitzeit zählt immer dein echtes Kommen – kommt der Bus später, verschiebt sich nur der Feierabend.</p></details>
         <details class="explain"><summary>Pause</summary><p>Stempelst du keine oder eine zu kurze Pause, zieht die App trotzdem die Pflichtpause ab (über 6 Std. 30 Min., über 9 Std. 45 Min., § 4 ArbZG). Längere gestempelte Pausen werden voll abgezogen. In jedem Tag steht, ob die Pause gestempelt oder automatisch war.</p></details>
         <details class="explain"><summary>Dienstag (Schule)</summary><p>Ein Schultag mit mehr als fünf Schulstunden zählt einmal pro Woche als voller Arbeitstag (§ 15 BBiG) – bei dir der Dienstag mit 8:00, ohne Stempeln.</p></details>
         <details class="explain"><summary>Mittwoch (Schule, dann Betrieb)</summary><p>Es zählen Unterricht samt Pausen, der Weg von der Schule in den Betrieb und deine Zeit im Betrieb (§ 15 Abs. 2 BBiG). Mit 7:55–13:10, 45 Min. Weg und Gehen um 16:30 sind das 8:35. Ob dein Betrieb das genauso zählt, kannst du beim Ausbilder klären – in den Einstellungen lässt sich der Mittwoch auch pauschal mit 8:00 zählen. Keine Rechtsberatung.</p></details>
@@ -732,7 +732,7 @@
       <section class="card">
         <h2 class="card-label"><span class="card-label-icon">🔒</span> Daten</h2>
         <p class="settings-hint">Alles bleibt auf diesem iPhone. Kein Konto, kein Server, keine Übertragung.</p>
-        <p class="settings-hint" id="zsVersion">Zeitstempel 1.0.1 · auf Basis von Feierabend-Rechner 3.1</p>
+        <p class="settings-hint" id="zsVersion">Zeitstempel 1.1 · auf Basis von Feierabend-Rechner 3.1</p>
       </section>
     </section>
 
@@ -959,6 +959,15 @@
           <input type="checkbox" id="zsAutoBreak" />
           <span>Pflichtpause automatisch abziehen, wenn keine oder zu wenig gestempelt ist</span>
         </label>
+        <label class="settings-field-label">Pause bezahlt (zählt als Arbeitszeit) an:</label>
+        <div class="zs-days">
+          <label><input type="checkbox" id="zsPaid_mo" /><span>Mo</span></label>
+          <label><input type="checkbox" id="zsPaid_di" /><span>Di</span></label>
+          <label><input type="checkbox" id="zsPaid_mi" /><span>Mi</span></label>
+          <label><input type="checkbox" id="zsPaid_do" /><span>Do</span></label>
+          <label><input type="checkbox" id="zsPaid_fr" /><span>Fr</span></label>
+          <label class="zs-mini zs-paid-min"><span>bis Min.</span><input type="text" inputmode="numeric" id="zsPaidMinutes" class="settings-input" /></label>
+        </div>
       </div>
 
       <div class="settings-section">

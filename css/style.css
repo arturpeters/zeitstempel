@@ -1456,3 +1456,7 @@ input.settings-input.zs-wide { background: var(--chip-bg); border-radius: 10px; 
 body #statusFeierabendRow, body #statusBalance { display: none !important; }
 body[data-theme="rose"] .week-today-btn { background: var(--chip-bg); color: var(--text); border: 1px solid var(--card-border); }
 body[data-theme="rose"] .chip-btn { background: var(--chip-bg); color: var(--text); border: 1px solid var(--card-border); }
+
+.zs-days { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; margin: 6px 0 4px; }
+.zs-days > label:not(.zs-mini) { display: inline-flex; align-items: center; gap: 4px; background: var(--chip-bg); border-radius: 10px; padding: 8px 10px; font-size: 13px; }
+.zs-days .zs-paid-min { flex: 0 0 76px; }

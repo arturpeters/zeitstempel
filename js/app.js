@@ -1406,6 +1406,14 @@
       if (!required && !actual) return null;
       return { text: 'Pause: ' + actual + ' Min. gestempelt (Pflicht: ' + stats.requiredBreakMinutes + ' Min.)', warn: stats.remainingBreakMinutes > 0 };
     }
+    if (stats.paidBreakCreditMinutes > 0 || (zsPaidBreakForStats(stats) > 0)) {
+      const paid = zsPaidBreakForStats(stats);
+      if (done) {
+        return { text: 'Pause heute bezahlt (' + paid + ' Min. zählen als Arbeitszeit)' +
+          (deducted > 0 ? ' · ' + deducted + ' Min. darüber abgezogen' : ''), warn: false };
+      }
+      return { text: 'Heute ist die Pause bezahlt – ' + paid + ' Min. zählen als Arbeitszeit.', warn: false };
+    }
     if (done) {
       if (!deducted) return null;
       if (actual === 0) return { text: 'Pause: ' + deducted + ' Min. automatisch abgezogen (nicht gestempelt)', warn: false };
@@ -1419,11 +1427,17 @@
     return { text: 'Pause: ' + actual + ' Min. gestempelt ✓', warn: false };
   }
 
+  function zsPaidBreakForStats(stats) {
+    if (!stats || !stats.clockInEvent) return 0;
+    return zsPaidBreakFor(P.dateKey(new Date(stats.clockInEvent.timestamp)));
+  }
+
   function pauseCellText(stats) {
     if (!stats.clockInEvent) return '–';
     const parts = [];
     if (stats.actualBreakMinutes > 0) parts.push(stats.actualBreakMinutes + ' Min. gestempelt');
     if (stats.autoBreakMinutes > 0) parts.push(stats.autoBreakMinutes + ' Min. automatisch');
+    if (stats.paidBreakCreditMinutes > 0) return (parts.join(' + ') || '0 Min.') + ' · bezahlt, zählt als Arbeit';
     if (!parts.length) return '0 Min.';
     return parts.join(' + ') + (stats.breakTooShort ? ' (zu kurz)' : '');
   }
@@ -3887,6 +3901,15 @@
     };
   }
 
+  /** ZEITSTEMPEL: bezahlte Pause an diesem Tag in Minuten (0 = keine). */
+  function zsPaidBreakFor(dateStr) {
+    const days = state.paidBreakDays || {};
+    const key = O.DAY_KEYS[(new Date(dateStr + 'T00:00:00').getDay() + 6) % 7];
+    if (!days[key]) return 0;
+    const n = parseInt(state.paidBreakMinutes, 10);
+    return Number.isNaN(n) ? 30 : Math.max(0, n);
+  }
+
   function isMixedType(type) {
     return !!(type && type.mixed && type.mode !== 'fixed');
   }
@@ -3932,7 +3955,10 @@
       s.dailyBalanceMinutes = s.clockInEvent ? s.totalNetMinutes - dayTarget : null;
       return s;
     }
-    const s = P.deriveStats(events || [], dayTarget, rule, nowMs, { autoBreak: state.autoBreak !== false });
+    const s = P.deriveStats(events || [], dayTarget, rule, nowMs, {
+      autoBreak: state.autoBreak !== false,
+      paidBreakMinutes: zsPaidBreakFor(dateStr),
+    });
     s.totalNetMinutes = s.netMinutes;
     return s;
   }
@@ -4803,6 +4829,8 @@
     const set = (id, v) => { const n = el(id); if (n) { if (n.type === 'checkbox') n.checked = !!v; else n.value = v == null ? '' : v; } };
     const rule = zsMixedRule() || mixedRuleTemplate();
     set('zsAutoBreak', state.autoBreak !== false);
+    ['mo', 'di', 'mi', 'do', 'fr'].forEach((k) => set('zsPaid_' + k, !!(state.paidBreakDays || {})[k]));
+    set('zsPaidMinutes', state.paidBreakMinutes || '30');
     set('zsMiFrom', rule.schoolFrom || '');
     set('zsMiTo', rule.schoolTo || '');
     set('zsMiTravel', rule.travelMinutes || '');
@@ -4851,6 +4879,13 @@
     const on = (id, ev, fn) => { const n = el(id); if (n) n.addEventListener(ev, () => fn(n)); };
     on('zsAutoBreak', 'change', (n) => { persist({ autoBreak: n.checked }); zsRefreshAll(); });
     on('zsMixedMode', 'change', (n) => { persist({ mixedDayMode: n.value }); zsRefreshAll(); });
+    ['mo', 'di', 'mi', 'do', 'fr'].forEach((k) => on('zsPaid_' + k, 'change', (n) => {
+      const days = Object.assign({}, state.paidBreakDays || {});
+      days[k] = n.checked;
+      persist({ paidBreakDays: days });
+      zsRefreshAll();
+    }));
+    on('zsPaidMinutes', 'change', (n) => { persist({ paidBreakMinutes: String(zsInt(n.value, 30)) }); zsFillSettings(); zsRefreshAll(); });
     on('zsMixedBreak', 'change', (n) => { persist({ mixedBreakInBetrieb: n.checked }); zsRefreshAll(); });
     on('zsMiFrom', 'change', (n) => { if (n.value) { zsSaveMixedRule({ schoolFrom: n.value }); zsRefreshAll(); } });
     on('zsMiTo', 'change', (n) => { if (n.value) { zsSaveMixedRule({ schoolTo: n.value }); zsRefreshAll(); } });
