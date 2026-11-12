@@ -167,6 +167,8 @@ const fr = bootApp({ workDays: {
   '2026-11-20': day('2026-11-20', [['clockIn', '07:45']]) } }, '2026-11-20T10:00:00');
 check('Fr 8:00–16:00 ohne Stempel: 7,5 Std. gearbeitet, zählt 8:00', fr.api.dayValueFor('2026-11-13'), '8:00');
 check('Fr Saldo ±0', fr.api.dayBalance('2026-11-13').diff, 0);
+const fr2 = bootApp({ workDays: { '2026-11-27': day('2026-11-27', [['clockIn', '07:45'], ['clockOut', '16:00']]) } }, '2026-11-27T20:00:00');
+check('Fr 7:45–16:00 (entschieden 12.11.: echte Zeit zählt) = 8:15, +0:15', [fr2.api.dayValueFor('2026-11-27'), fr2.api.dayBalance('2026-11-27').diff], ['8:15', 15]);
 check('Fr 45 Min. Pause: nur der Überhang (15) wird abgezogen -> 7:45', fr.api.dayValueFor('2026-11-06'), '7:45');
 check('Fr Kommen 7:45 -> Feierabend 15:45 (Gleitzeit)', fr.t('zsTodayTime'), '15:45');
 check('Fr Hinweis „Pause bezahlt"', /bezahlt/.test(fr.t('statusPauseHint')), true);
