@@ -1266,6 +1266,7 @@
     renderWeekDays();
     renderWeekSummary();
     renderMonth();
+    if (type === P.TYPES.CLOCK_OUT) zsMaybeAskBreak(dateStr);
   }
 
   function parseCommuteMinutes(raw) {
@@ -1399,6 +1400,13 @@
       if (stats.autoBreakMinutes > 0) t += ' · ' + stats.autoBreakMinutes + ' Min. Pause automatisch';
       return { text: t, warn: false };
     }
+    if (stats.breakConfirmedNone && done) {
+      return { text: 'Keine Pause gemacht (von dir angegeben) – nichts abgezogen', warn: stats.totalNetMinutes > 360 };
+    }
+    if (stats.breakFromAnswerMinutes > 0 && done) {
+      return { text: 'Pause: ' + stats.breakFromAnswerMinutes + ' Min. (von dir angegeben)' +
+        (stats.breakTooShort ? ' – zu kurz, ' + stats.deductedBreakMinutes + ' Min. abgezogen' : ' ✓'), warn: stats.breakTooShort };
+    }
     const actual = stats.actualBreakMinutes;
     const deducted = stats.deductedBreakMinutes;
     const required = stats.requiredBreakMinutes || 0;
@@ -1434,8 +1442,9 @@
 
   function pauseCellText(stats) {
     if (!stats.clockInEvent) return '–';
+    if (stats.breakConfirmedNone) return 'keine (angegeben)';
     const parts = [];
-    if (stats.actualBreakMinutes > 0) parts.push(stats.actualBreakMinutes + ' Min. gestempelt');
+    if (stats.actualBreakMinutes > 0) parts.push(stats.actualBreakMinutes + ' Min. ' + (stats.breakFromAnswerMinutes ? 'angegeben' : 'gestempelt'));
     if (stats.autoBreakMinutes > 0) parts.push(stats.autoBreakMinutes + ' Min. automatisch');
     if (stats.paidBreakCreditMinutes > 0) return (parts.join(' + ') || '0 Min.') + ' · bezahlt, zählt als Arbeit';
     if (!parts.length) return '0 Min.';
@@ -1722,6 +1731,7 @@
 
     dayDetailError.classList.add('is-hidden');
     zsRenderQuickFill(dateStr, wd, activeType, stats);
+    zsRenderBreakEdit(dateStr, wd);
     const existingMenu = dayDetailDialog.querySelector('.day-detail-add-menu');
     if (existingMenu) existingMenu.remove();
   }
@@ -3901,6 +3911,12 @@
     };
   }
 
+  /** ZEITSTEMPEL: nachträglich angegebene Pause (Abfrage nach Gehen) oder null. */
+  function zsBreakAnswerFor(dateStr) {
+    const wd = state.workDays && state.workDays[dateStr];
+    return (wd && wd.breakAnswer) || null;
+  }
+
   /** ZEITSTEMPEL: bezahlte Pause an diesem Tag in Minuten (0 = keine). */
   function zsPaidBreakFor(dateStr) {
     const days = state.paidBreakDays || {};
@@ -3949,7 +3965,10 @@
       const mx = mixedTimesFor(dateStr);
       const betriebTarget = Math.max(0, dayTarget - mx.creditMinutes);
       const mixedRule = (net) => (state.mixedBreakInBetrieb ? rule(net + mx.creditMinutes) : 0);
-      const s = P.deriveStats(events || [], betriebTarget, mixedRule, nowMs, { autoBreak: state.autoBreak !== false });
+      const s = P.deriveStats(events || [], betriebTarget, mixedRule, nowMs, {
+        autoBreak: state.autoBreak !== false,
+        breakAnswer: zsBreakAnswerFor(dateStr),
+      });
       s.mixed = mx;
       s.totalNetMinutes = mx.creditMinutes + s.netMinutes;
       s.dailyBalanceMinutes = s.clockInEvent ? s.totalNetMinutes - dayTarget : null;
@@ -3958,6 +3977,7 @@
     const s = P.deriveStats(events || [], dayTarget, rule, nowMs, {
       autoBreak: state.autoBreak !== false,
       paidBreakMinutes: zsPaidBreakFor(dateStr),
+      breakAnswer: zsBreakAnswerFor(dateStr),
     });
     s.totalNetMinutes = s.netMinutes;
     return s;
@@ -5002,6 +5022,7 @@
     wd = P.addEvent(wd, P.TYPES.CLOCK_OUT, combineDateAndClock(dateStr, outClock, Date.now()));
     saveWorkDayIfValid(dateStr, wd, null);
     renderZeitstempel();
+    zsMaybeAskBreak(dateStr);
   }
 
   // ---- ZEITSTEMPEL: Sicherungen, die NUR auf diesem iPhone liegen ----------
@@ -5113,6 +5134,82 @@
     }
   }
 
+  // ---- ZEITSTEMPEL: Pausen-Abfrage nach "Gehen" -----------------------------
+  // Nur wenn keine Pause gestempelt ist. Die Antwort landet am Tag als
+  // workDay.breakAnswer ({ minutes } oder { none: true }) und ersetzt dort
+  // die automatische Pflichtpause. Gestempelte Pausen gehen immer vor.
+  let zsBreakDate = null;
+
+  function zsHasStampedBreak(events) {
+    return (events || []).some((e) => e.type === P.TYPES.BREAK_START);
+  }
+
+  function zsMaybeAskBreak(dateStr) {
+    const wd = state.workDays && state.workDays[dateStr];
+    if (!wd || zsHasStampedBreak(wd.events)) return;
+    if (P.statusForEvents(wd.events) !== P.STATUS.DONE) return;
+    if (wd.breakAnswer) return;
+    zsOpenBreakDialog(dateStr);
+  }
+
+  function zsOpenBreakDialog(dateStr) {
+    const dlg = el('zsBreakDialog');
+    if (!dlg) return;
+    zsBreakDate = dateStr;
+    const wd = getWorkDay(dateStr);
+    const plain = Object.assign({}, wd, { breakAnswer: null });
+    const stats = P.deriveStats(plain.events, targetNetMinutes(), breakRuleFn(), Date.now(), {});
+    const gross = stats.grossMinutes || 0;
+    const suggest = Math.max(30, breakRuleFn()(Math.max(0, gross - 30)) || 0);
+    el('zsBreakYes').textContent = 'Ja, ' + suggest + ' Min.';
+    el('zsBreakYes').dataset.minutes = String(suggest);
+    el('zsBreakMinutes').value = '';
+    const isToday = dateStr === P.todayKey();
+    el('zsBreakSub').textContent = (isToday ? 'Heute' : formatDateDe(dateStr)) + ' ' +
+      (stats.clockInEvent ? clockOf(stats.clockInEvent.timestamp) + '–' + (stats.clockOutEvent ? clockOf(stats.clockOutEvent.timestamp) : '') : '') +
+      ' · keine Pause gestempelt';
+    el('zsBreakLaw').classList.toggle('is-hidden', gross <= 360);
+    if (typeof dlg.showModal === 'function' && !dlg.open) dlg.showModal();
+  }
+
+  function zsAnswerBreak(answer) {
+    const dlg = el('zsBreakDialog');
+    if (zsBreakDate && answer !== undefined) {
+      const wd = getWorkDay(zsBreakDate);
+      const next = Object.assign({}, wd);
+      if (answer === null) delete next.breakAnswer; else next.breakAnswer = answer;
+      saveWorkDay(zsBreakDate, next);
+      renderStatus();
+      renderWeekDays();
+      renderWeekSummary();
+      renderMonth();
+      if (dayDetailDialog.open && dayDetailDateKey === zsBreakDate) renderDayDetail(zsBreakDate);
+    }
+    zsBreakDate = null;
+    if (dlg && dlg.open) dlg.close();
+  }
+
+  function zsBindBreakDialog() {
+    const on = (id, fn) => { const n = el(id); if (n) n.addEventListener('click', fn); };
+    on('zsBreakYes', () => zsAnswerBreak({ minutes: parseInt(el('zsBreakYes').dataset.minutes, 10) || 30 }));
+    on('zsBreakOther', () => {
+      const n = parseInt(el('zsBreakMinutes').value, 10);
+      if (!n || n < 1 || n > 600) { el('zsBreakMinutes').focus(); return; }
+      zsAnswerBreak({ minutes: n });
+    });
+    on('zsBreakNo', () => zsAnswerBreak({ none: true }));
+    // "Später": nichts speichern -> automatische Pflichtpause bleibt
+    on('zsBreakSkip', () => zsAnswerBreak(undefined));
+    on('zsBreakEditBtn', () => { if (dayDetailDateKey) zsOpenBreakDialog(dayDetailDateKey); });
+  }
+
+  function zsRenderBreakEdit(dateStr, wd) {
+    const btn = el('zsBreakEditBtn');
+    if (!btn) return;
+    const show = P.statusForEvents(wd.events || []) === P.STATUS.DONE && !zsHasStampedBreak(wd.events);
+    btn.classList.toggle('is-hidden', !show);
+  }
+
   // ---- Update-Hinweis vom Service Worker (siehe pwa.js) --------------------
   function zsBindUpdateBanner() {
     if (!zs.updateBanner) return;
@@ -5136,6 +5233,7 @@
     zsFillSettings();
     zsBindSettings();
     zsBindUpdateBanner();
+    zsBindBreakDialog();
     renderPlan();
     renderZeitstempel();
     zsDailySnapshot().then(renderSnapshots);

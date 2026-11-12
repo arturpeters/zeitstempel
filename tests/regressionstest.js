@@ -176,6 +176,44 @@ const frOff = bootApp({ paidBreakDays: {}, workDays: {
   '2026-11-13': day('2026-11-13', [['clockIn', '08:00'], ['clockOut', '16:00']]) } });
 check('Einstellung aus: Fr 8:00–16:00 zählt 7:30', frOff.api.dayValueFor('2026-11-13'), '7:30');
 
+section('Pausen-Abfrage nach Gehen');
+const ask = bootApp({ zsStartDate: '2026-11-19', workDays: {
+  '2026-11-19': day('2026-11-19', [['clockIn', '07:45']]) } }, '2026-11-19T16:15:00');
+ask.click('#btnGehen');
+check('nach Gehen ohne Pause: Abfrage offen', ask.el('zsBreakDialog').open, true);
+check('… Vorschlag „Ja, 30 Min."', ask.t('zsBreakYes'), 'Ja, 30 Min.');
+check('… Hinweis § 4 bei über 6 Std.', ask.el('zsBreakLaw').classList.contains('is-hidden'), false);
+ask.click('#zsBreakNo');
+check('„Nein": Abfrage zu', ask.el('zsBreakDialog').open, false);
+check('„Nein": nichts abgezogen, zählt 8:30', ask.api.dayValueFor('2026-11-19'), '8:30');
+check('„Nein": Text erklärt es', /keine Pause gemacht/i.test(ask.t('statusPauseHint')), true);
+ask.el('zsBreakEditBtn').click(); // ohne geöffnetes Tagesdetail: passiert nichts
+ask.w.document.querySelector('#zsBreakEditBtn');
+const ask2 = bootApp({ zsStartDate: '2026-11-19', workDays: {
+  '2026-11-19': day('2026-11-19', [['clockIn', '07:45']]) } }, '2026-11-19T16:30:00');
+ask2.click('#btnGehen');
+ask2.el('zsBreakMinutes').value = '45';
+ask2.click('#zsBreakOther');
+check('„Ja, 45 Min.": 7:45–16:30 zählt 8:00', ask2.api.dayValueFor('2026-11-19'), '8:00');
+check('… als „angegeben" gekennzeichnet', /angegeben/.test(ask2.t('statusPauseHint')), true);
+const ask3 = bootApp({ zsStartDate: '2026-11-19', workDays: {
+  '2026-11-19': day('2026-11-19', [['clockIn', '07:45']]) } }, '2026-11-19T16:15:00');
+ask3.click('#btnGehen'); ask3.click('#zsBreakSkip');
+check('„Später": automatische 30 Min. bleiben, zählt 8:00', ask3.api.dayValueFor('2026-11-19'), '8:00');
+const ask4 = bootApp({ zsStartDate: '2026-11-19', workDays: {
+  '2026-11-19': day('2026-11-19', [['clockIn', '07:45'], ['breakStart', '12:00'], ['breakEnd', '12:30']]) } }, '2026-11-19T16:15:00');
+ask4.click('#btnGehen');
+check('Pause gestempelt: keine Abfrage', ask4.el('zsBreakDialog').open, false);
+const ask5 = bootApp({ zsStartDate: '2026-11-19', workDays: {
+  '2026-11-19': day('2026-11-19', [['clockIn', '07:45'], ['breakStart', '12:00'], ['breakEnd', '12:30'], ['clockOut', '16:15']], { breakAnswer: { none: true } }) } });
+check('Stempel gehen vor Antwort: zählt 8:00', ask5.api.dayValueFor('2026-11-19'), '8:00');
+const ask6 = bootApp({ zsStartDate: '2026-11-16', workDays: {
+  '2026-11-19': day('2026-11-19', [['clockIn', '07:45']]) } }, '2026-11-20T07:30:00');
+ask6.click('#zsFixBtn'); ask6.click('#zsQfSave');
+check('nach Nachtragen von Gehen: Abfrage für den Tag', [ask6.el('zsBreakDialog').open, /19\.11/.test(ask6.t('zsBreakSub'))], [true, true]);
+ask6.click('#zsBreakYes');
+check('… und das Tagesdetail bietet „Pause ändern"', ask6.el('zsBreakEditBtn').classList.contains('is-hidden'), false);
+
 section('Startseite und Tagesplan');
 const TR = { walkHomeMinutes: '5', walkWorkMinutes: '7', toWork: [{ dep: '07:09', arr: '07:43' }],
   fromWork: [{ dep: '16:22', arr: '16:56' }, { dep: '16:47', arr: '17:21' }] };
@@ -264,6 +302,6 @@ check('keine Inline-Styles/-Skripte im HTML (sonst blockiert die CSP)',
 
 // ===========================================================================
 section('Ende');
-check('keine Laufzeitfehler', [].concat(fr.errors, frOff.errors, empty.errors, week.errors, live.errors, flat.errors, early.errors, brk.errors, mo.errors, plan.errors, mi.errors, fix.errors, ind.errors), []);
+check('keine Laufzeitfehler', [].concat(ask.errors, ask2.errors, ask3.errors, ask4.errors, ask5.errors, ask6.errors, fr.errors, frOff.errors, empty.errors, week.errors, live.errors, flat.errors, early.errors, brk.errors, mo.errors, plan.errors, mi.errors, fix.errors, ind.errors), []);
 console.log('\n' + (failed ? 'FEHLER: ' + failed + ' fehlgeschlagen, ' : 'ALLES GRÜN: ') + passed + ' ok, ' + failed + ' Fehler');
 process.exitCode = failed ? 1 : 0;

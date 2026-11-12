@@ -732,7 +732,7 @@
       <section class="card">
         <h2 class="card-label"><span class="card-label-icon">🔒</span> Daten</h2>
         <p class="settings-hint">Alles bleibt auf diesem iPhone. Kein Konto, kein Server, keine Übertragung.</p>
-        <p class="settings-hint" id="zsVersion">Zeitstempel 1.1 · auf Basis von Feierabend-Rechner 3.1</p>
+        <p class="settings-hint" id="zsVersion">Zeitstempel 1.2 · auf Basis von Feierabend-Rechner 3.1</p>
       </section>
     </section>
 
@@ -1118,6 +1118,24 @@
     </form>
   </dialog>
 
+  <!-- ============ ZEITSTEMPEL: Pausen-Abfrage nach "Gehen" ============ -->
+  <dialog id="zsBreakDialog" class="settings-dialog zs-break-dialog">
+    <div class="settings-form">
+      <h2 class="zs-break-title">Hast du heute Pause gemacht?</h2>
+      <p class="settings-hint" id="zsBreakSub">Du hast keine Pause gestempelt.</p>
+      <button type="button" class="status-btn status-btn-primary zs-wide" id="zsBreakYes">Ja, 30 Min.</button>
+      <div class="zs-break-other">
+        <span>Ja, aber</span>
+        <input type="text" inputmode="numeric" id="zsBreakMinutes" class="settings-input" placeholder="45" />
+        <span>Min.</span>
+        <button type="button" class="chip-btn" id="zsBreakOther">OK</button>
+      </div>
+      <button type="button" class="status-btn status-btn-secondary zs-wide" id="zsBreakNo">Nein, keine Pause</button>
+      <p class="settings-hint zs-break-law is-hidden" id="zsBreakLaw">Hinweis: Über 6 Std. Arbeit ist eine Pause gesetzlich Pflicht (§ 4 ArbZG). Die Zeit zählt trotzdem so, wie du sie angibst.</p>
+      <button type="button" class="zs-break-skip" id="zsBreakSkip">Später – erst mal 30 Min. automatisch</button>
+    </div>
+  </dialog>
+
   <!-- ============ TAGES-DETAIL DIALOG (Verlauf: einzelner Tag) ============ -->
   <dialog id="dayDetailDialog" class="settings-dialog day-detail-dialog">
     <form method="dialog" class="settings-form">
@@ -1142,6 +1160,8 @@
         <button type="button" class="status-btn status-btn-primary zs-wide" id="zsQfSave">Speichern</button>
         <p class="settings-hint">Pause nicht eingetragen? Die App zieht die Pflichtpause automatisch ab.</p>
       </div>
+
+      <button type="button" class="chip-btn settings-wide-btn is-hidden" id="zsBreakEditBtn">☕ Pause angeben / ändern</button>
 
       <h3 class="day-detail-heading">Erfasste Zeiten</h3>
       <div class="day-detail-events" id="dayDetailEvents"></div>

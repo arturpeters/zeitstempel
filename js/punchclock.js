@@ -221,7 +221,22 @@
     let actualBreakMs = 0;
     breaks.forEach((b) => { actualBreakMs += (b.end - b.start); });
     if (hasOpenBreak) actualBreakMs += Math.max(0, referenceNow - openBreakStart);
-    const actualBreakMinutes = Math.round(actualBreakMs / 60000);
+    let actualBreakMinutes = Math.round(actualBreakMs / 60000);
+
+    // ZEITSTEMPEL: Pause nachträglich angegeben (Abfrage nach "Gehen").
+    // Gilt nur, solange keine Pause gestempelt ist – Stempel gehen vor.
+    //   opts.breakAnswer = { minutes: 30 } -> wie 30 Min. gestempelt
+    //   opts.breakAnswer = { none: true }  -> bewusst keine Pause: nichts
+    //                                         automatisch abziehen
+    const answer = (o.breakAnswer && !breaks.length && !hasOpenBreak) ? o.breakAnswer : null;
+    let breakConfirmedNone = false;
+    let breakFromAnswerMinutes = 0;
+    if (answer && answer.none) {
+      breakConfirmedNone = true;
+    } else if (answer && answer.minutes > 0) {
+      breakFromAnswerMinutes = Math.round(answer.minutes);
+      actualBreakMinutes = breakFromAnswerMinutes;
+    }
 
     let grossMinutes = 0;
     if (clockInEvent) {
@@ -232,7 +247,7 @@
     let deductedBreakMinutes = actualBreakMinutes;
     let autoBreakMinutes = 0;
     let breakTooShort = false;
-    if (o.autoBreak && breakRuleFn && clockInEvent) {
+    if (o.autoBreak && !breakConfirmedNone && breakRuleFn && clockInEvent) {
       const extra = Math.max(0, o.extraBreakMinutes || 0);
       const extraNet = Math.max(0, o.extraNetMinutes || 0);
       // Pflichtpause hängt an der Nettozeit, die Nettozeit an der Pause ->
@@ -295,6 +310,8 @@
       autoBreakMinutes: autoBreakMinutes,
       breakTooShort: breakTooShort,
       paidBreakCreditMinutes: paidBreakCreditMinutes,
+      breakConfirmedNone: breakConfirmedNone,
+      breakFromAnswerMinutes: breakFromAnswerMinutes,
       // Tagessaldo = Netto bisher minus Soll. Negativ solange das Soll noch
       // nicht erreicht ist, 0 bei genau erreichtem Soll, positiv bei Überstunden
       // - live und ohne Sonderfälle über den ganzen Tag hinweg konsistent.
@@ -319,6 +336,7 @@
     if (workDay.dayType) clone.dayType = workDay.dayType;
     // ZEITSTEMPEL: abweichende Schulzeiten an genau diesem Tag (Mischtag)
     if (workDay.school) clone.school = Object.assign({}, workDay.school);
+    if (workDay.breakAnswer) clone.breakAnswer = Object.assign({}, workDay.breakAnswer);
     return clone;
   }
 
